@@ -1,0 +1,8 @@
+[
+  {
+    "name": "bot_example",
+    "admin": false,
+    "password": "postman",
+    "redirect_url": "http://127.0.0.1:81/starwatch/authenticate.php"
+  }
+]
