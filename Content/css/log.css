@@ -1,0 +1,32 @@
+table
+{
+    font-family: monospace;
+    color: var(--ansi-gray);
+    margin: 10px;
+    margin-bottom: 12px;
+    border: transparent;
+}
+
+th, td
+{
+    text-align: left;
+}
+tr#correct 
+{
+    color: var(--ansi-white);
+}
+
+tr#onion {
+    color: var(--ansi-black);
+}
+
+tr#break {
+    display: block;
+    border: 2px dashed var(--ansi-black);
+}
+
+td #highlight
+{
+    font-weight: bold;
+    text-decoration: underline;
+}

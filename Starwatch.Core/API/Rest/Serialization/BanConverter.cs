@@ -1,0 +1,25 @@
+﻿using Starwatch.API.Rest.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Starwatch.API.Rest.Serialization
+{
+    class BanConverter : IArgumentConverter
+    {
+        public bool TryConvertArgument(RestHandler context, string value, out object result)
+        {
+            //Make sure the ticket is valid
+            long ticket;
+            if (!long.TryParse(value, out ticket))
+            {
+                result = null;
+                return false;
+            }
+
+            //Get the ban
+            result = context.Starbound.Settings.GetBan(ticket);
+            return true;
+        }
+    }
+}

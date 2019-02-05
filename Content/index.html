@@ -1,0 +1,464 @@
+<html>
+    <head>        
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+        <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet" />
+
+        <script src="https://cdn.jsdelivr.net/npm/ui-contextmenu@1.18.1/jquery.ui-contextmenu.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+
+        <script type = "text/javascript" src = "js/ByteStream.js" ></script>
+        <script type = "text/javascript" src = "js/sbname.js" ></script>
+        <script type = "text/javascript" src = "js/StarwatchClient.js" ></script>
+
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <title>Starwatch Gateway</title>
+    </head>
+    <body>
+        <div class="toolbar">
+            <button id="chat" onclick="toggleFilter('chat');">Chat &#9898;</button>
+            <button id="info" onclick="toggleFilter('info');">Info &#9898;</button>
+            <button id="warn" onclick="toggleFilter('warn');">Warn &#9898;</button>
+            <button id="erro" onclick="toggleFilter('erro');">Error &#9898;</button>
+            <button id="autoscroll" onclick="toggleAutoscroll();">Autoscroll &#9898;</button>
+            <button id="clear" onclick="if(confirm('Are you sure you wish to clear your logs?')) $('tr.log').remove();">Clear</button>
+            <input type="text" id="broadcast" placeholder="say..."></input>
+            <button id="broadcast_send" onclick="sendBroadcast();">Send</button>
+            
+            <button class="right" id="restart" onclick="if(confirm('Are you sure you wish to restart?')) starwatch.restartServer();">Restart Server</button>
+            <button class="right" id="allowAnon" onclick="toggleAnon();">Allow Anon &#9898;</button>
+        </div>
+        
+        <div class="panel" id="left">
+  
+            <div class="logwrapper">
+            <table class="log" style="width:100%">
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+        </div>
+        <div class="panel" id="right">
+            <div class="stats">
+                    <canvas id="myChart" width="800" height="460"></canvas>
+            </div>
+            <div class="players">
+                <table class="playerlist" style="width:100%">
+                    <tr>
+                        <th>$</th>
+                        <th>Name</th>
+                        <th>Account</th>
+                        <th width="180px">Location</th>
+                        <th>IP</th>
+                    </tr>
+                </table>
+            </div>
+            <div id="dialog-form" title="Action Reason" style="display: none;">
+                <form>
+                    <textarea style="width: 315px; height: 50px">Disconnected due to inactivity.</textarea>
+                    <input type="number" name="timeout" id="timeout"></input>
+                    <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+                </form>
+            </div>
+        </div>
+
+        <script>
+        var prependInstead = false; var autoscroll = false;
+        var logCounter = 0; var connectAttempts = 0;
+        var showChat = false, showInfo = false, showWarning = false, showError = false;
+
+        var starwatch = new StarwatchClient(location.hostname, location.port ? location.port : 80, location.protocol == "https:");
+        starwatch.onPlayerConnected = pushPlayer;
+        starwatch.onPlayerDisconnected = popPlayer;
+        starwatch.onPlayersSync = syncPlayers;
+        starwatch.onPlayerUpdated = updatePlayer;  
+        starwatch.onRateLimitReached = function(ratelimit) 
+        {
+            console.error(ratelimit);
+            alert("RateLimited\nYour account has been ratelimted. Please wait " + (ratelimit.timeout / 1000) + "s before performing any actions!");
+        }
+        starwatch.onSettingsUpdate = function(settings) 
+        {
+            let toggle = settings.allowAnonymousConnections ? " &#9745;" : " &#9744;";
+            $(".toolbar button#allowAnon").html("Allow Anon " + toggle);
+        } 
+
+        starwatch.onConnect = function () { connectAttempts = 0; pushMessage("info", "client", "Connected to server..."); }
+        starwatch.onReady = function () { pushMessage("info", "client", "Connection ready."); }
+        starwatch.onClose = function (reason) 
+        { 
+            pushMessage("erro", "client", "Connection to starwatch lost! " + reason); 
+
+            if (connectAttempts < 5) 
+            {
+                setTimeout(connect, 1000);
+            }
+            else 
+            {
+                pushMessage("erro", "client", "Failed to reconnect to the server.");
+                if (confirm("Failed to reconnect to the server. Your authorization maybe invaid and require a refresh.\n\nReload the page?"))
+                    location.reload();
+            }
+        }
+        starwatch.onLogMessage = function(msg) 
+        {
+            logCounter += 1;
+            var type = "";
+            var author = "";
+            switch(msg.Level) { 
+                default:
+                    type = "erro";
+                    author = "????";
+                break;
+                case STARWATCH_LOGLEVEL.Info:
+                    if (!showInfo) return;
+                    type = "info";
+                    author = "info";
+                break; 
+                case STARWATCH_LOGLEVEL.Warning:
+                    if (!showWarning) return;
+                    type = "warn";
+                    author = "warning";
+                break; 
+                case STARWATCH_LOGLEVEL.Error:
+                    if (!showError) return;
+                    type = "erro";
+                    author = "error";
+                break; 
+                case STARWATCH_LOGLEVEL.Chat:
+                    if (!showChat) return;
+                    type = "chat";
+                    author = escapeStarboundTags(msg.Author);
+                break;
+            }
+
+            pushMessage(type, author, msg.Content);
+        };
+
+        function connect() 
+        { 
+            connectAttempts += 1;
+            pushMessage("info", "client", "Connecting (" + connectAttempts + ")..."); 
+            starwatch.connect(); 
+        }
+
+        $('input#broadcast').keypress(function(e) { if(e.which == 13) { sendBroadcast(); }});
+        function sendBroadcast() 
+        {
+            let msg = $("input#broadcast").val();
+            $("input#broadcast").val("");
+            starwatch.broadcast(msg);
+
+        }
+        function setAutoscroll(state) {            
+            autoscroll = state;            
+            $(".toolbar button#autoscroll").html("Autoscroll" + (state ? " &#9745;" : " &#9744;"));
+            pushMessage("info", "client", "Autoscroll is now " + (state ? "enabled" : "disabled"));
+        }
+
+        function toggleAnon() 
+        {  
+            let state = starwatch.settings.allowAnonymousConnections = !starwatch.settings.allowAnonymousConnections;
+            $(".toolbar button#allowAnon").html("Working....");
+            starwatch.patchSettings({ allowAnonymousConnections: state}); 
+        }
+        function toggleAutoscroll() { setAutoscroll(!autoscroll); }
+        function toggleFilter(tag) 
+        {
+            let isEnabled = false;
+            let label = "";
+            switch(tag)
+            {
+                case "info":
+                    isEnabled = showInfo = !showInfo;
+                    label = "Info";
+                    break;
+
+                case "warn":
+                    isEnabled = showWarning = !showWarning;
+                    label = "Warn";
+                    break;
+
+                case "erro":
+                    isEnabled = showError = !showError;
+                    label = "Error";
+                    break;
+
+                case "chat":
+                    isEnabled = showChat = !showChat;
+                    label = "Chat";
+                    break;
+            }
+            
+            $(".toolbar button#"+tag).html(label + (isEnabled ? " &#9745;" : " &#9744;"));
+
+            if (isEnabled) 
+            { 
+                $("tr.log#" + tag).fadeIn();
+            }
+            else 
+            {
+                pushMessage(tag, "-------", "----- end of read -------");
+                $("tr.log#"+tag).fadeOut();
+            }
+
+            pushMessage("info", "client", label + " is now " + (isEnabled ? "enabled" : "disabled"));
+        }
+        function clearMessage(tag) 
+        {
+            console.log("Removing " + tag);
+            $("table.log tr#" + tag).fadeOut("normal", function() {  this.remove(); });
+        }        
+        function pushMessage(tag, author, content) 
+        {
+            var entry = $('<tr>', { "class": "log", "id": tag });
+            var timeField = $('<td>', { "id": "time" });
+            var authorField = $('<td>', { "id": "author" });
+            var contentField = $('<td>', { "id": "content"});
+            timeField.text(moment().format("LTS"));
+            authorField.text(author);
+            contentField.text(content);
+            entry.append(timeField).append(authorField).append(contentField);
+
+            //console.log("["+tag+"] " + author + ": " + content);
+            if (prependInstead) 
+            {
+                $("table.log").prepend(entry);
+            }
+            else
+            {
+                $("table.log").append(entry);
+                if (autoscroll) 
+                {
+                    $('.logwrapper').scrollTop($('.logwrapper')[0].scrollHeight);
+                }
+            }
+        }
+
+        function syncPlayers(players) 
+        { 
+            $("tr.player").remove();
+            for (var i = 0; i < players.length; i++) pushPlayer(players[i]);
+        }
+        function popPlayer(player) { $("tr.player#" + player.Connection).remove();  }
+        function pushPlayer(player) 
+        {
+            var entry = $('<tr>', { "class": "player context", "id": player.Connection });
+            var connField = $('<td>', { "id": "connection" });
+            var nameField = $('<td>', { "id": "name" });
+            var accnField = $('<td>', { "id": "account" });
+            var locaField = $('<td>', { "id": "location" });
+            var uuidField = $('<td>', { "id": "ID" });
+
+            connField.text(player.Connection);
+            nameField.text(player.Username);
+            accnField.text(player.AccountName == null ? "-" : player.AccountName);
+            locaField.text("-");
+            uuidField.text("-");
+
+            if (player.IsAdmin) entry.addClass("admin");
+
+            entry.append(connField).append(nameField).append(accnField).append(locaField).append(uuidField);
+            $("table.playerlist").append(entry);
+
+            updatePlayer(player);
+        }
+        function updatePlayer(player) 
+        {
+            $("tr.player#"+player.Connection+ " #location").text(player.Location == null ? "-" : player.Location.split(":").join(" "));
+            
+            if (player.Nickname != null)  $("tr.player#"+player.Connection+ " #name").html("<span id='top'>" + formatStarboundTags(player.Nickname) + "</span><span id='bottom'>" + escapeStarboundTags(player.Username) + "</span>");
+            else $("tr.player#"+player.Connection+ " #name").html(formatStarboundTags(player.Username));
+
+            if (player.UUID != null)  $("tr.player#"+player.Connection+ " #ID").html("<span id='top'>" + player.IP + "</span><span id='bottom'>" + player.UUID + "</span>");
+            else  $("tr.player#"+player.Connection+ " #ID").html(player.IP);
+        }
+            
+
+        $(document).ready(function() {
+            toggleAutoscroll();
+            toggleFilter('info');
+            toggleFilter('warn');
+            toggleFilter('erro');
+            toggleFilter('chat');
+            connect();
+        });
+        </script>
+       
+       <script>
+        var ctx = document.getElementById("myChart").getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Messages',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',                
+                        borderColor:  'rgba(255,99,132,1)',
+                        fill: false,
+                        borderWidth: 1
+                    },
+                    
+                    {
+                        label: 'Players',
+                        data: [],            
+                        borderColor:  'rgba(132,99,255,1)',
+                        fill: false,
+                        borderWidth: 1
+                    }
+            ]
+            },
+            options: {
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: "Date"
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero:true
+                        }
+                    }]
+                }
+            }
+        });
+
+        window.setInterval(pushNewStatistics, 15 * 1000);
+        pushNewStatistics();
+        function pushNewStatistics() 
+        {
+            starwatch.getStatistics(function(data) {
+                if (data.Status != 0) { console.error(data); return; }
+
+                let time = Date();
+                popData(0, 10);
+                popData(1, 10);
+                //myChart.update(0);
+
+                pushData(0, time, logCounter);
+                pushData(1, time, data.Response.Connections);
+                myChart.update(0);
+
+                logCounter = 0;
+            });
+        }
+        function popData(dataset, limit)
+        {
+            //Keep the limit
+            if (myChart.data.datasets[dataset].data.length >= limit) 
+                myChart.data.datasets[dataset].data.shift();
+        }
+        function pushData(dataset, time, value)
+        {
+            //Push the data
+            myChart.data.datasets[dataset].data.push({
+                x: time,
+                y: value
+            });
+        }
+        </script>
+        
+        <script>
+            $(".players").contextmenu({
+                delegate: ".context",
+                menu: [
+                    {title: "Kick", cmd: "kick", uiIcon: "ui-icon-close"},
+                    {title: "Timeout", cmd: "timeout", uiIcon: "ui-icon-clock"},
+                    {title: "Ban", cmd: "ban", uiIcon: "ui-icon-cancel"},
+                ],
+                select: function(event, ui) 
+                {
+                    let target = ui.target.closest("tr");
+                    let id = target.attr("id");
+                    if (ui.cmd == "kick")
+                    {
+                        $("#dialog-form textarea").val("Disconnected due to inactivity.");
+                        $("#dialog-form input#timeout").css({'display': 'none'});
+
+                        let dialog = $("#dialog-form").dialog({
+                            autoOpen: true, height: 200, width: 350, modal: true,
+                            buttons: {
+                                "Kick Account": function() 
+                                { 
+                                    starwatch.players[id].kick( $("#dialog-form textarea").val());
+                                    dialog.dialog("close");
+                                },
+                                Cancel: function() { dialog.dialog( "close" );  }
+                            }
+                        });
+                    }
+
+                    if (ui.cmd == "timeout")
+                    {
+                        $("#dialog-form textarea").val("Continued disruption, timeout for 2 minutes.");
+                        $("#dialog-form input#timeout").css({'display': 'block'});
+                        $("#dialog-form input#timeout").val(120);
+
+                        let dialog = $("#dialog-form").dialog({
+                            autoOpen: true, height: 250, width: 350, modal: true,
+                            buttons: {
+                                "Timeout Account": function() 
+                                { 
+                                    let reason = $("#dialog-form textarea").val();
+                                    let duration = $("#dialog-form input#timeout").val();
+                                    starwatch.players[id].timeout(reason, duration);
+                                    dialog.dialog("close");
+                                },
+                                Cancel: function() { dialog.dialog( "close" );  }
+                            }
+                        });
+                    }
+
+                    if (ui.cmd == "ban")
+                    {                    
+                        $("#dialog-form textarea").val("^red;Continued Disruption.");
+                        $("#dialog-form input#timeout").css({'display': 'none'});
+                        let dialog = $("#dialog-form").dialog({
+                            autoOpen: true, height: 200, width: 350, modal: true,
+                            buttons: {
+                                "Ban Account": function() 
+                                { 
+                                    $("tr.player#" + id).addClass("strikeout");
+                                    starwatch.players[id].ban($("#dialog-form textarea").val());
+                                    dialog.dialog("close");
+                                },
+                                Cancel: function() { dialog.dialog( "close" );  }
+                            }
+                        });
+                    }
+
+                    
+                }
+            });
+        </script>
+    </body>
+</html>
+
+<!--
+
+    <div class="player" id="250">
+                        <span id="name">
+                            <i id="caret" class="fa fa-caret-right down" aria-hidden="true"></i>
+                             <span class="starboundtext"><span style="color: yellow;">Nicole</span><span id="white" style="color:white;"></span></span>
+                        </span>
+                        <div class="slideout" id="info">
+                            <span class="intel" id="connection">connection: 250</span>
+                            <span class="intel" id="character">character: Goldie</span>
+                            <span class="intel" id="nickname">nickname: ^yellow;Nicole^white;</span>
+                            <span class="intel" id="uuid">uuid: </span>
+                            <span class="intel" id="ip">ip: 101.99.202.227</span>
+                            <span class="intel" id="account">account: SwiftRevolver</span>
+                            <span class="intel" id="location">location: CelestialWorld:17:17:-198600707:4</span>
+                        </div>
+                    </div>
+
+-->

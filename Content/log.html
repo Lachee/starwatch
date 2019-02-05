@@ -1,0 +1,132 @@
+<html>
+    <head>        
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+        <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet" />
+
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <link rel='stylesheet' type='text/css' href='css/log.css'>
+        <title>Starwatch Gateway</title>
+    </head>
+    <body>
+        <div id="search">
+            <select id="log"></select>
+            <input id="query" type="text" placeholder="regex"></input>
+            <button id="search">Search</button>
+        </div>
+        <div id="searchhtml">
+            
+        </div>
+    </body>
+    <script>
+        let swbase = location.protocol + "//" + location.hostname + ":" + (location.port ? location.port : 80);
+        let apibase = swbase + "/api";
+        let logbase = swbase + "/log/";
+
+        $('input#query').keypress(function(e) { if(e.which == 13) {  Search($("select#log").children("option:selected").val(), $("input#query").val()); }});
+        $("button#search").click(function () { Search($("select#log").children("option:selected").val(), $("input#query").val()); });
+
+        $.ajax({ url: apibase + "/log",}).done(function (data) {
+            //Make sure its valid
+            if (data.Status != 0) 
+            {
+                console.log(data);
+                console.error(data.Message);
+                return;
+            }
+
+            //Start processing the data
+            let select_menu = $("select#log");
+            select_menu.html("");
+            for (let i = 0; i < data.Response.length; i++) 
+            {
+                var option = $("<option>", { value: data.Response[i] });
+                option.text("Log " + data.Response[i]);
+                select_menu.append(option);
+            }
+
+            //Update the selected one to match the query            
+            let log = getParameterByName("log");
+            if (log == null || log == '') log = "0";
+            $("select#log").val(log);
+        });
+
+        function Search(log, regex) 
+        {
+            //Do the search
+            let url = logbase + log + "?regex=" + regex;
+            $.ajax({ 
+                url: url,
+                success: function(html) {
+                    //Update the url
+                    window.history.pushState({"html": html, "pageTitle": "Search Log " + log },"", "?log=" + log + "&regex=" + regex);
+
+                    //Update the window
+                    $("#searchhtml").html(html); 
+                },
+                error: function(http, textStatus, errorThrown)
+                {
+                    let response = http.responseJSON;
+                    if (response.Status == 4290)
+                    {
+                        let datetime = new Date(response.Response.RetryAfter);
+                        alert("RateLimit Reached\nYou have reached the ratelimit of your account. Please wait until " + datetime);
+                        $("input#query").css("display", "none");
+                        $("button#search").css("display", "none");
+                        
+                        let diff = datetime.getTime() - new Date().getTime();
+                        setTimeout(function() { 
+                            $("input#query").css("display", "");
+                            $("button#search").css("display", "");
+                        }, diff);
+                    }
+                    else
+                    {
+                        console.error(http);
+                        alert("Unkown Error Occured");
+                    }
+                }
+            });
+        }
+        
+        $(document).ready(function() 
+        {
+            let regex = getParameterByName("regex");
+            if (regex != null) 
+            {             
+                //Update teh search query.
+                //We are updating the query and not hte selected log because that will get done
+                // when its generated.
+                $("input#query").val(regex);
+
+                //Get the log number
+                let log = getParameterByName("log");
+                if (log == null || log == '') log = "0";
+
+                //Do a search
+                Search(log, regex);
+            }
+            
+
+            window.onpopstate = function(e){
+                if(e.state)
+                {
+                    //Update the window
+                    $("#searchhtml").html(e.state.html); 
+                    document.title = e.state.pageTitle;
+                }
+            };
+        });
+
+        function getParameterByName(name, url)
+        {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+    </script>
+</html>
