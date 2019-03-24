@@ -172,117 +172,55 @@ namespace Starwatch.API.Rest
 
                 //We are going to find the closest matching route.
                 int bestScore = 0;
-                List<RouteFactory> bestFactories = new List<RouteFactory>(1);
-                foreach (var f in factories)
+                RouteFactory bestFactory = null;
+                foreach (RouteFactory factory in factories)
                 {
-                    int score = f.CalculateRouteScore(segments);
+                    int score = factory.CalculateRouteScore(segments);
                     if (score > 0 && score >= bestScore)
                     {
-                        //If it matches the previous one then we will just be adding this factory.
-                        // Otherwise we will clear the factories and start again
-                        if (score == bestScore)
-                        {
-                            Logger.Log($"Routing ADDITIONALLY {f.Route} ({score})");
-                            bestFactories.Add(f);
-                        }
-                        else
-                        {
-                            Logger.Log($"Routing {f.Route} ({score})");
-                            bestFactories.Clear();
-                            bestFactories.Add(f);
-                        }
-
-                        //Update the best score. 
                         bestScore = score;
+                        bestFactory = factory;
                     }
                 }
 
                 //Make sure we found something
-                if (bestFactories.Count == 0)
+                if (bestFactory == null)
                 {
                     Logger.LogError("BAD REQUEST: No routes match the stubs");
                     res.WriteRest(new RestResponse(RestStatus.RouteNotFound, msg: "No route that matched segments."));
                     return true;
                 }
 
-                //Find the best actual factory now
-                RouteFactory factory = null;
-                RestRoute route = null;
-                Exception exception = null;
-                bool hasBadAuthLevel = false;
-
-                foreach (var f in bestFactories)
-                {
-                    Logger.Log("Trying route {0}...", f.Route);
-
-                    //Make sure we are allowed to access it
-                    if (f.AuthenticationLevel > authentication.AuthLevel)
-                    {
-                        Logger.LogError("Authentication is trying to access something that is above its level");
-                        hasBadAuthLevel = true;
-                        continue;
-                    }
-
-                    try
-                    {
-                        //Create the factory and catch any errors that are associated with it.
-                        route = f.Create(this, authentication, segments);
-                        factory = f;
-
-                        Logger.Log("- Route Success. Aborting scan.");
-                        break;
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(e, "Failed to create route: {0}");
-                        exception = e;
-                    }
-                }
-
                 //Make sure we are allowed to access this with out current level
-                if (route == null)
+                if (bestFactory.AuthenticationLevel > authentication.AuthLevel)
                 {
-                    if (hasBadAuthLevel)
-                    {
-                        //We were forbidden from this endpoint
-                        Logger.LogError("Authentication is trying to access something that is above its level");
-                        res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: "Route requires authorization level " + factory.AuthenticationLevel.ToString()));
-                        return true;
-                    }
-
-                    if (exception != null)
-                    {
-                        try
-                        {
-                            throw exception;
-                        }
-                        catch (ArgumentMissingResourceException e)
-                        {
-                            Logger.LogWarning("Failed to map argument because of missing resources: {0}", e.ResourceName);
-                            res.WriteRest(new RestResponse(RestStatus.ResourceNotFound, msg: $"Failed to find the resource '{e.ResourceName}'", res: e.ResourceName));
-                            return true;
-                        }
-                        catch (ArgumentMappingException e)
-                        {
-                            Logger.LogError(e, "Failed to map argument: {0}");
-                            res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: "Failed to assign route argument.", res: e.Message));
-                            return true;
-                        }
-                        catch (Exception e)
-                        {
-                            //Its a generic exception
-                            Logger.LogError("Mapping fell through with exception: " + e.Message);
-                            res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: "Failed to map parameters. " + e.Message, res: e));
-                            return true;
-                        }
-                    }
+                    Logger.LogError("Authentication is trying to access something that is above its level");
+                    res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: "Route requires authorization level " + bestFactory.AuthenticationLevel.ToString()));
+                    return true;
                 }
-
 
                 //Create a instance of the route
+                RestRoute route = null;
                 Query query = new Query(req);
                 RestResponse response = null;
                 object payload = null;
+
+                try
+                {
+                     route = bestFactory.Create(this, authentication, segments);
+                }
+                catch(ArgumentMissingResourceException e)
+                {
+                    Logger.LogWarning("Failed to map argument because of missing resources: {0}", e.ResourceName);
+                    res.WriteRest(new RestResponse(RestStatus.ResourceNotFound, msg: $"Failed to find the resource '{e.ResourceName}'", res: e.ResourceName));
+                    return true;
+                }
+                catch(ArgumentMappingException e)
+                {
+                    Logger.LogError(e, "Failed to map argument: {0}");
+                    res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: "Failed to assign route argument.", res: e.Message));
+                    return true;
+                }
 
                 //Just quick validation that everything is still ok.
                 Debug.Assert(route != null, "Route is null and was never assigned!");
@@ -337,10 +275,10 @@ namespace Starwatch.API.Rest
                 Debug.Assert(response != null);
 
                 //Update the authentications update
-                authentication.RecordAction("rest:" + factory.Route);
+                authentication.RecordAction("rest:" + bestFactory.Route);
 
                 //Write the resulting json
-                response.Route = factory.Route;
+                response.Route = bestFactory.Route;
                 response.Time = watch.ElapsedMilliseconds;
                 res.WriteRest(response);
             }
