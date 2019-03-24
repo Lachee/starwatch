@@ -25,7 +25,7 @@ namespace Starwatch.API.Rest
 {
     public class RestHandler : IRequestHandler
     {
-        public const bool ENFORCE_SSL_PASSWORDS = true;
+        public const bool ENFORCE_SSL_PASSWORDS = false;
 
         private const string ROOT_URL = "/api";
         private const int BUFFER_SIZE = 2048;

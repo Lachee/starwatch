@@ -59,8 +59,27 @@ namespace Starwatch.API.Web
         public bool TryGetBool(string key, out bool result)
         {
             string v;
-            if (!TryGetValue(key, out v)) { result = default(bool); return false; }
-            return bool.TryParse(v, out result);
+
+            //Make sure we have the value
+            if (!TryGetValue(key, out v))
+            {
+                result = default(bool);
+                return false;
+            }
+
+            //If its a bool, give straight up
+            if (bool.TryParse(v, out result))
+                return true;
+
+            //Try to parse it as a int
+            if (int.TryParse(v, out var num))
+            {
+                result = num == 1;
+                return true;
+            }
+
+            //Everything else failed.
+            return false;
         }
 
         /// <summary>

@@ -53,10 +53,10 @@ namespace Starwatch.Extensions.Whitelist
         /// <param name="mode"></param>
         /// <param name="allowAnonymous"></param>
         /// <returns></returns>
-        public bool AddWorld(World world, WhitelistMode mode, bool allowAnonymous = false)
+        public bool AddWorld(World world, WhitelistMode mode, bool allowAnonymous = false, string name = null)
         {
             if (_protectedWorlds.ContainsKey(world.Whereami)) return false;
-            _protectedWorlds.Add(world.Whereami, new ProtectedWorld(world, mode, allowAnonymous));
+            _protectedWorlds.Add(world.Whereami, new ProtectedWorld(world, mode, allowAnonymous, name));
             Configuration.SetKey(CONFIG_WORLDS_KEY, _protectedWorlds, save: true);
             return true;
         }

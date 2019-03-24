@@ -198,8 +198,9 @@ namespace Starwatch.Util
             {
                 obj = token.ToObject<T>();
             }
-            catch
+            catch(Exception e)
             {
+                Console.WriteLine(e.Message);
                 obj = default(T);
                 return false;
             }

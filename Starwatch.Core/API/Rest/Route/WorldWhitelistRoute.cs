@@ -53,6 +53,9 @@ namespace Starwatch.API.Rest.Route
             if (!manager.RemoveWorld(World))
                 return new RestResponse(RestStatus.ResourceNotFound, msg: "World does not have protection.");
 
+            //Save the new lists
+            manager.Save();
+
             return new RestResponse(RestStatus.OK, res: true);
 
         }
@@ -68,16 +71,19 @@ namespace Starwatch.API.Rest.Route
 
             //Get the payload and make sure it svalid
             OptionalProtectedWorld patch = (OptionalProtectedWorld)payloadObject;
-            if (patch.AllowAnonymous.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'AllowAnonymous' is null or missing.");
-            if (patch.Mode.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'Mode' is null or missing.");
+            if (!patch.AllowAnonymous.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'AllowAnonymous' is null or missing.");
+            if (!patch.Mode.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'Mode' is null or missing.");
 
             //Add the protection
-            if (!manager.AddWorld(World, patch.Mode.Value, patch.AllowAnonymous.Value))
+            if (!manager.AddWorld(World, patch.Mode.Value, patch.AllowAnonymous.Value, patch.Name))
                 return new RestResponse(RestStatus.BadRequest, msg: "Failed to create protection. Please ensure the protection doesnt already exist.");
             
             //Add the members
             if (patch.AccountList != null)
                 manager.AddAccounts(World, patch.AccountList);
+
+            //Save the new lists
+            manager.Save();
 
             //Return the newly added route
             return OnGet(query);
@@ -98,12 +104,16 @@ namespace Starwatch.API.Rest.Route
 
             //Get the payload and make sure its valid
             OptionalProtectedWorld patch = (OptionalProtectedWorld)payloadObject;
+            protection.Name = patch.Name ?? protection.Name;
             protection.AllowAnonymous = patch.AllowAnonymous.GetValueOrDefault(protection.AllowAnonymous);
             protection.Mode = patch.Mode.GetValueOrDefault(protection.Mode);
 
             //Add the members
             if (patch.AccountList != null)
                 manager.AddAccounts(World, patch.AccountList);
+
+            //Save the new lists
+            manager.Save();
 
             //Return the newly patched route
             return OnGet(query);

@@ -9,15 +9,20 @@ namespace Starwatch.Extensions.Whitelist
 {
     public class ProtectedWorld
     {
+        public string Name { get; set; }
+
+        [JsonConverter(typeof(Serializer.WorldSerializer))]
         public World World { get; private set; }
+
         public HashSet<string> AccountList { get; private set; }
         public bool AllowAnonymous { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public WhitelistMode Mode { get; set; }
 
-        public ProtectedWorld(World world, WhitelistMode mode, bool allowAnonymous = false)
+        public ProtectedWorld(World world, WhitelistMode mode, bool allowAnonymous = false, string name = null)
         {
+            Name = name ?? world.Whereami;
             World = world;
             AccountList = new HashSet<string>();
             Mode = mode;
