@@ -171,13 +171,15 @@ namespace Starwatch.API.Rest
                 }
 
                 //We are going to find the closest matching route.
-                int bestScore = 0;
+                int bestScore = -1;
                 RouteFactory bestFactory = null;
                 foreach (RouteFactory factory in factories)
                 {
                     int score = factory.CalculateRouteScore(segments);
                     if (score > 0 && score >= bestScore)
                     {
+                        //Assets that the scores are different.
+                        Debug.Assert(score > bestScore, $"Overlapping route scores! {bestFactory?.Route} = {factory?.Route} ({score})");
                         bestScore = score;
                         bestFactory = factory;
                     }

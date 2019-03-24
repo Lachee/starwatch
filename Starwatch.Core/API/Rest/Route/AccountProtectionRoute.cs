@@ -13,13 +13,13 @@ using System.Linq;
 
 namespace Starwatch.API.Rest.Route
 {
-    [Route("/world/:account/protection/", permission: AuthLevel.Admin)]
-    class WorldWhitelistAccountSearchRoute : RestRoute
+    [Route("/account/:account/protection", permission: AuthLevel.Admin)]
+    class AccountProtectionRoute : RestRoute
     {
         [Argument("account", Converter = typeof(AccountConverter))]
         public Account Account { get; set; }
 
-        public WorldWhitelistAccountSearchRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+        public AccountProtectionRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
 
         /// <summary>
         /// Searches for all whitelists for the account
