@@ -36,5 +36,16 @@ namespace Starwatch.Extensions.Whitelist
             return Mode == WhitelistMode.Whitelist ? withinListing : !withinListing;
         }
 
+        /// <summary>
+        /// Checks if the protected world has the account listed.
+        /// </summary>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public bool HasAccount(string account)
+        {
+            if (account == null || account == Account.Annonymous) return AllowAnonymous;
+            return AccountList.Contains(account);
+        }
+
     }
 }

@@ -21,6 +21,7 @@ namespace Starwatch.API.Rest.Route
         [Argument("account", Converter = typeof(AccountConverter))]
         public Account Account { get; set; }
 
+
         public WorldWhitelistAccountRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
 
         /// <summary>

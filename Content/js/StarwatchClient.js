@@ -71,7 +71,7 @@ class StarwatchClient
 		{ 
 			//Send the hello
 			this.isConnected = true;
-			this._send(new Frame(this._getNextSequence(), STARWATCH_OPCODE.Hello, "HELO", JSON.stringify( { Agent: "StarwatchJS (offical)"})));
+			this._send(new Frame(this._getNextSequence(), STARWATCH_OPCODE.Hello, "HELO", JSON.stringify( { Agent: "StarwatchJS/1.0 (offical)"})));
 			this.onConnect();
 			this._reloadSettings();
 		}

@@ -328,9 +328,15 @@ namespace Starwatch.Starbound
                     _processAbortTokenSource = null;
                 }
 
+                Logger.Log("Cancelling Process...");
+                _process.CancelOutputRead();
+
                 Logger.Log("Killing & Waiting for process...");
-                if (!_process.HasExited) _process.Kill();
-                _process.WaitForExit();
+                if (!_process.HasExited)
+                {
+                    _process.Kill();
+                    _process.WaitForExit();
+                }
 
                 Logger.Log("Disposing of process...");
                 _process.Dispose();
@@ -338,6 +344,9 @@ namespace Starwatch.Starbound
 
                 Logger.Log("Process Disposed.");
                 EndTime = DateTime.UtcNow;
+
+                Logger.Log("Waiting some time as leadup...");
+                await Task.Delay(2500);
             }
             finally
             {
@@ -404,10 +413,11 @@ namespace Starwatch.Starbound
 
             if (string.IsNullOrEmpty(SamplePath))
             {
+                #region Process Handling
                 //Destroy the rcon reference. We will replace it with a new one later.
                 Rcon = null;
 
-                //Create the process
+                #region Create the process
                 await _processSemaphore.WaitAsync();
                 try
                 {
@@ -435,8 +445,9 @@ namespace Starwatch.Starbound
                 {
                     _processSemaphore.Release();
                 }
+                #endregion
 
-                //Log the start of the process
+                //sstart of the process
                 Logger.Log("Staring Starbound Process");
                 bool success = _process.Start();
                 if (success)
@@ -449,7 +460,7 @@ namespace Starwatch.Starbound
                         Logger.Log("Created RCON Client.");
                     }
 
-                    //Invoke the start event
+                    #region Invoke the start event
                     foreach (var m in _monitors)
                     {
                         try
@@ -462,6 +473,7 @@ namespace Starwatch.Starbound
                             Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
                         }
                     }
+                    #endregion
 
                     //Handle the messages
                     Logger.Log("Handling Messages");
@@ -473,44 +485,33 @@ namespace Starwatch.Starbound
                         _terminate = await ProcessLine(args.Data);
                         if (_terminate) await Terminate();
                     };
+                    _process.Exited += (sender, args) =>
+                    {
+                        Logger.Log("Process Exited. ");
+                        if (_processAbortTokenSource != null && !_processAbortTokenSource.IsCancellationRequested)
+                        {
+                            Logger.Log("Requesting closure of token");
+                            _processAbortTokenSource.Cancel();
+                        }
+                    };
 
                     
                     //Do the cancel
                     try { await Task.Delay(-1, _processAbortTokenSource.Token); } catch (TaskCanceledException) { }
 
-                    /*
-                    //Setup the terminate value and being processing messages
-                    _terminate = false;
-                    while (!_terminate && !cancellationToken.IsCancellationRequested)
-                    {
-                        BufferedStream buffstream = new BufferedStream(_process.StandardOutput.BaseStream);
-                        buffstream.ReadAsync()
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            Logger.LogWarning("Leaving read because of cancellation token!");
-                            _terminate = true;
-                        }
-                        else
-                        {
-                            _terminate = await ProcessLine(data);
-                        }
-
-                        //Loop back again, trying to read messages again
-                    }
-                    */
-
-
-
                     //We have exited the loop, probably because we have been terminated
+                    _process.CancelOutputRead();
                     Logger.Log("Left the read loop");
                 }
                 else
                 {
                     Logger.Log("Failed to start the starbound process for some reason.");
                 }
+                #endregion
             }
             else
             {
+                #region Log Reading
                 //Invoke the start event
                 foreach (var m in _monitors)
                 {
@@ -541,8 +542,8 @@ namespace Starwatch.Starbound
                     //Wait a bit
                     await Task.Delay(random.Next(SampleMinDelay, SampleMaxDelay));
                 }
-
                 Logger.Log("Finished reading prefined log");
+                #endregion
             }
 
             //Invoke exit event

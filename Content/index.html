@@ -71,7 +71,7 @@
         var logCounter = 0; var connectAttempts = 0;
         var showChat = false, showInfo = false, showWarning = false, showError = false;
 
-        var starwatch = new StarwatchClient(location.hostname, location.port ? location.port : 80, location.protocol == "https:");
+        var starwatch = new StarwatchClient(location.hostname, location.port ? location.port : 80, "", location.protocol == "https:");
         starwatch.onPlayerConnected = pushPlayer;
         starwatch.onPlayerDisconnected = popPlayer;
         starwatch.onPlayersSync = syncPlayers;

@@ -3,6 +3,7 @@ using Starwatch.Monitoring;
 using Starwatch.Starbound;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -84,6 +85,8 @@ namespace Starwatch.Extensions.Whitelist
             return null;
         }
 
+        public IEnumerable<ProtectedWorld> GetWorlds() => _protectedWorlds.Values;
+        public IEnumerable<ProtectedWorld> GetWorlds(Account account) => _protectedWorlds.Values.Where(w => w.HasAccount(account.Name));
 
         /// <summary>
         /// Adds an account to the protected world.

@@ -95,7 +95,8 @@ namespace Starwatch.API
             }
 
             //First make sure we are allowed
-            if (BlocklistHandler != null && BlocklistHandler.HandleRequest(method, args, authentication)) return;
+            if (BlocklistHandler != null && BlocklistHandler.HandleRequest(method, args, authentication))
+                return;
 
             //Double check teh rate limits. Every hit counts as one. Additional hits maybe include.
             authentication.RecordAction($"http:{method}");
