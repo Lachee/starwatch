@@ -25,7 +25,7 @@ namespace Starwatch.API
         /// Access key for the authentication.
         /// </summary>
         private string Password { get; }
-
+        
         /// <summary>
         /// The method which the authentication was established.
         /// </summary>

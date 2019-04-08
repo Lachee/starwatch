@@ -6,11 +6,12 @@ using Starwatch.API.Web;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Starwatch.API.Gateway;
 
 namespace Starwatch.API.Rest.Route
 {
     [Route("/server")]
-    class ServerRoute : RestRoute
+    class ServerRoute : RestRoute, IGatewayRoute
     {
         public override Type PayloadType => typeof(Payload);
         struct Payload
@@ -22,6 +23,15 @@ namespace Starwatch.API.Rest.Route
         }
 
         public ServerRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+
+        public ServerRoute() : base(null, null) { }
+
+        public string GetRouteName() => "/server";
+        public void SetGateway(GatewayJsonConnection gateway)
+        {
+            this.Handler = gateway.API.RestHandler;
+            this.Authentication = gateway.Authentication;
+        }
 
         public override RestResponse OnPatch(Query query, object payloadObject)
         {

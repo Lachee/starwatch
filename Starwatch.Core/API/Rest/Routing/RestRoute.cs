@@ -12,7 +12,7 @@ namespace Starwatch.API.Rest.Routing
         /// <summary>
         /// The main handler of the request
         /// </summary>
-        public RestHandler Handler { get; }
+        public RestHandler Handler { get; internal set; }
 
         /// <summary>
         /// The current starbound server.
@@ -22,7 +22,7 @@ namespace Starwatch.API.Rest.Routing
         /// <summary>
         /// The authentication that is executing the endpoint
         /// </summary>
-        public Authentication Authentication { get; }
+        public Authentication Authentication { get; internal set; }
 
         /// <summary>
         /// The current permission level the authentication has.
@@ -34,6 +34,7 @@ namespace Starwatch.API.Rest.Routing
         /// </summary>
         public virtual Type PayloadType => null;
 
+        public RestRoute() { }
         public RestRoute(RestHandler handler, Authentication authentication)
         {
             Handler = handler;

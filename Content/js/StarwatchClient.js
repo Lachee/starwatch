@@ -42,7 +42,7 @@ class StarwatchClient
 		
 		this.onConnect 				= function() {}
 		this.onReady 				= function() {}
-		this.onClose 				= function(reason) {}
+		this.onClose 				= function(code, reason) {}
 
 		this.onPlayersSync 			= function(players) { this._log("OnPlayerSync: " + players.length); }
 		this.onPlayerConnected 		= function(player) { this._log("OnPlayerConnected: " + player.Username); }
@@ -82,7 +82,10 @@ class StarwatchClient
 			this._log(event);
 			this.isConnected = false;
 			this.isReady = false;
-			this.onClose(event.reason);
+            this.onClose(event.code, event.reason);
+            
+            if (event.code == 1008)
+                console.error("Forbidden from accessing the API!");
 		}
 
 		this._socket.onerror = (event) => 
@@ -303,7 +306,7 @@ class Frame
 {
 	constructor(sequence, opcode, identifier, content = "") 
 	{
-		this.version = 4;
+		this.version = 5;
 		this.sequence = sequence;
 		this.opcode = opcode;
 		this.identifier = identifier;

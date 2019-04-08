@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Starwatch.API.Gateway;
 using Starwatch.API.Rest;
+using Starwatch.API.Rest.Route;
+using Starwatch.API.Rest.Routing;
 using Starwatch.API.Rest.Util;
 using Starwatch.API.Util;
 using Starwatch.API.Web;
@@ -24,6 +26,9 @@ namespace Starwatch.API
     {
         private const string BOT_ACCOUNT_FILE = "Starwatch-Bots.json";
         private const int DEFAULT_PORT = 8000;
+
+        public const string GATEWAY_EVENT_SERVICE = "/events";
+        public const string GATEWAY_LOG_SERVICE = "/log";
 
         public Logger Logger { get; }
         public Configuration Configuration { get; }
@@ -57,13 +62,28 @@ namespace Starwatch.API
             this.BlocklistHandler.BlockAddresses = configuration.GetObject("blocklist", new HashSet<string>());
 
             //Create the handlers
-            requestHandlers.Add(this.RestHandler = new Rest.RestHandler(this));
-            requestHandlers.Add(this.AuthHandler = new Web.AuthHandler(this));
-            requestHandlers.Add(new LogHandler(this));
-            requestHandlers.Add(new WebHandler(this) { ContentRoot = Configuration.GetString("web_root", "Content/") });
+            //Register the auth handler
+            if (configuration.GetBool("enable_rest", true))
+            {
+                requestHandlers.Add(this.RestHandler = new Rest.RestHandler(this)
+                {
+                    MinimumAuthentication = configuration.GetObject("rest_minimum_auth", AuthLevel.Admin)
+                });
+                RestHandler.RegisterRoutes(Assembly.GetAssembly(typeof(Rest.Route.MetaEndpointsRoute)));
+            }
+
+            //Register the auth handler
+            if (configuration.GetBool("enable_auth", true))
+                requestHandlers.Add(this.AuthHandler = new Web.AuthHandler(this));
+
+            //Register the log handler
+            if (configuration.GetBool("enable_log", true))
+                requestHandlers.Add(new LogHandler(this));
+
+            //Register the web handler
+            if (configuration.GetBool("enable_web", true))
+                requestHandlers.Add(new WebHandler(this) { ContentRoot = Configuration.GetString("web_root", "Content/") });
             
-            //Register the rest handler routes
-            RestHandler.RegisterRoutes(Assembly.GetAssembly(typeof(Rest.Route.MetaEndpointsRoute)));
 
             //Setup the timer
             _authenticationTimer = new Timer(60 * 1000) { AutoReset = true };
@@ -138,15 +158,11 @@ namespace Starwatch.API
                 }));
                 return;
             }
-            //else if (limit >= 0.75) //We are at 75% of our rate limit, getting a bit scarry. We should probably tell em in advance.
-            //{
 
             //Lets just always add these headers anyways cause why not.
             args.Response.AddHeader("X-RateLimit-Reset", authentication.RateLimitResetTime.ToString("r"));
             args.Response.AddHeader("X-RateLimit-Limit", authentication.GetRateLimit().ToString());
             args.Response.AddHeader("X-RateLimit-Remaining", authentication.GetRateLimitRemaining().ToString());
-            //}
-
 
             //Iterate over every handler and abort when we get the first valid one.
             for (int i = 0; i < requestHandlers.Count; i++)
@@ -186,7 +202,7 @@ namespace Starwatch.API
 
             //If we are not secure then setup the server normally.
             // We are doing it as a seperate if statement because the secure check may fail.
-            if (!IsSecure) 
+            if (!IsSecure)
             {
                 Logger.LogWarning("The connection is not secured. Authentication functionality will be disabled!");
                 HttpServer = new HttpServer(Port, false);
@@ -194,7 +210,9 @@ namespace Starwatch.API
 
             //Establish the common settings
             this.HttpServer.Log.Level = WebSocketSharp.LogLevel.Warn;
-            this.HttpServer.Log.Output = (data, file) => { Logger.Log("[HTTP] " + $"({data.Level}) {data.Message}"); };
+            this.HttpServer.Log.Output = (data, file) => {
+                Logger.Log("[HTTP] " + $"({data.Level}) {data.Message}");
+            };
 
             //Authentication handling
             this.HttpServer.AuthenticationSchemes = WebSocketSharp.Net.AuthenticationSchemes.Basic;
@@ -213,7 +231,8 @@ namespace Starwatch.API
 
             //Service
             //HttpServer.AddWebSocketService("/", () => new Gateway.GatewayConnection(this));
-            HttpServer.AddWebSocketService<Gateway.GatewayConnection>("/", gc => gc.Initialize(this));
+            HttpServer.AddWebSocketService<Gateway.GatewayJsonConnection>(GATEWAY_EVENT_SERVICE, gc => gc.Initialize(this));
+            HttpServer.AddWebSocketService<Gateway.GatewayLogConnection>(GATEWAY_LOG_SERVICE, gc => gc.Initialize(this));
 
             //Start the actual server
             Logger.Log("Starting HTTP Server on port {0}, secured: {1}", Port, IsSecure);
@@ -236,10 +255,10 @@ namespace Starwatch.API
         /// Gets all the gateway connections
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<GatewayConnection> GetGatewayConnections()
+        public IEnumerable<T> GetGatewayConnections<T>(string service) where T : GatewayConnection
         {
-            var serviceHost = HttpServer.WebSocketServices["/"];
-            return serviceHost.Sessions.Sessions.Select(s => s as GatewayConnection).Where(s => s != null);
+            var serviceHost = HttpServer.WebSocketServices[service];
+            return serviceHost.Sessions.Sessions.Select(s => s as T).Where(s => s != null);
         }
 
         /// <summary>
@@ -400,6 +419,35 @@ namespace Starwatch.API
             account = default(BotAccount);
             return false;
         }
+        #endregion
+
+        #region Gateway Helpers
+
+        /// <summary>
+        /// Sends a route event over all the gateway connections that are listening
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="route"></param>
+        /// <param name="evt">The name of the event</param>
+        /// <param name="reason">The reason for the event</param>
+        /// <param name="query"></param>
+        internal void BroadcastRoute<T>(T route, string evt, string reason = "", Query query = null) where T : RestRoute, IGatewayRoute
+        {
+            var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
+
+            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as GatewayJsonConnection))
+            {
+                try
+                {
+                    con.SendRoute<T>(route, evt, reason, query);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "Failed to send event to connection "+con+": {0}");
+                }
+            }
+        }
+
         #endregion
     }
 }

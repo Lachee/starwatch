@@ -8,16 +8,28 @@ using Starwatch.API;
 using Starwatch.API.Rest.Serialization;
 using System.Threading.Tasks;
 using Starwatch.Starbound.Rcon;
+using Starwatch.API.Gateway;
 
 namespace Starwatch.API.Rest.Route
 {
     [Route("/player/:cid", AuthLevel.Admin)]
-    class PlayerDetailsRoute : RestRoute
+    class PlayerDetailsRoute : RestRoute, IGatewayRoute
     {
         [Argument("cid", Converter = typeof(ConnectionConverter))]
-        public Player Player { get; private set; }
-
+        public Player Player { get; internal set; }
+        
         public PlayerDetailsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+        public PlayerDetailsRoute(Player player) : this(null, null)
+        {
+            this.Player = player;
+        }
+        
+        public string GetRouteName() => "/player/:cid";
+        public void SetGateway(GatewayJsonConnection jsonConnection)
+        {
+            this.Handler = jsonConnection.API.RestHandler;
+            this.Authentication = jsonConnection.Authentication;
+        }
 
 
         public override RestResponse OnGet(Query query)
@@ -68,5 +80,6 @@ namespace Starwatch.API.Rest.Route
             if (async) return RestResponse.Async;
             return new RestResponse(RestStatus.OK, res: task.Result);
         }
+
     }
 }

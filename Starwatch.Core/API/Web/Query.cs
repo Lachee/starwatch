@@ -12,9 +12,11 @@ namespace Starwatch.API.Web
     public class Query : Dictionary<string, string>
     {
         public const string AsyncKey = "async";
-        
+
+        public Query() : base(0) { }
+        public Query(int capacity) : base(capacity) { }
         public Query(HttpListenerRequest request) : this(request.QueryString) { }
-        public Query(NameValueCollection collection)
+        public Query(NameValueCollection collection) : base(collection.Count)
         {
             foreach (string key in collection.AllKeys)
             {

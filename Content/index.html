@@ -89,9 +89,22 @@
 
         starwatch.onConnect = function () { connectAttempts = 0; pushMessage("info", "client", "Connected to server..."); }
         starwatch.onReady = function () { pushMessage("info", "client", "Connection ready."); }
-        starwatch.onClose = function (reason) 
+        starwatch.onClose = function (code, reason) 
         { 
             pushMessage("erro", "client", "Connection to starwatch lost! " + reason); 
+            if (code == 1008)
+            {
+                pushMessage("erro", "client", "Failed to connect to the websocket because of a Policy Violation. Your account may not have permission.");
+                alert("Policy Violation\n\nYour account does not have access to the websocket API.");
+                return;
+            }
+
+            if (code == 1002)
+            {
+                pushMessage("erro", "client", "Failed to connect to the websocket because of bad version.");
+                alert("Version Error\n\nFailed to connect to the websocket because your client is too old.");
+                return;
+            }
 
             if (connectAttempts < 5) 
             {

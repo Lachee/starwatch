@@ -38,6 +38,7 @@ namespace Starwatch.API.Rest
         public HttpServer HttpServer => ApiHandler.HttpServer;
         public StarboundHandler Starwatch => ApiHandler.Starwatch;
         public Starbound.Server Starbound => ApiHandler.Starwatch.Server;
+        public AuthLevel MinimumAuthentication { get; set; } = AuthLevel.Admin;
 
         public RestHandler(ApiHandler apiHandler)
         {
@@ -125,11 +126,19 @@ namespace Starwatch.API.Rest
                     authentication.AuthLevel = AuthLevel.SuperUser;
                     //authentication.AuthType = AuthType.Bot;
 
-                    //Update the authentications update
+                //Update the authentications update
                 Logger.Log("Authentication {0} requested {1}", authentication, req.RawUrl);
 
                 //Keep it alive
                 res.KeepAlive = true;
+
+                //Make sure we actually have meet the minimum floor
+                if (authentication.AuthLevel < MinimumAuthentication)
+                {
+                    Logger.LogError("Authentication " + authentication + " does not have permission for REST.");
+                    res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: $"Authentication forbidden from accessing REST API."));
+                    return true;
+                }
 
                 //Make sure its valid type
                 bool requireContentType = method != RequestMethod.Get && method != RequestMethod.Delete;

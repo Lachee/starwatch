@@ -16,10 +16,17 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnGet(Query query)
         {
-            var serviceHost = Handler.HttpServer.WebSocketServices["/"];
-            var gateways = Handler.ApiHandler.GetGatewayConnections();
+            WebSocketSharp.Server.WebSocketServiceHost serviceHost;
+            List<GatewayConnection> gateways = new List<GatewayConnection>();
 
 
+            serviceHost = Handler.HttpServer.WebSocketServices["/log"];
+            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as GatewayLogConnection));
+
+            serviceHost = Handler.HttpServer.WebSocketServices["/events"];
+            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as GatewayJsonConnection));
+
+            //TODO: Make this list all sessions, not just last one
             return new RestResponse(RestStatus.OK, res: new GatewayListing()
             {
                 ActiveSessions = serviceHost.Sessions.ActiveIDs.Count(),

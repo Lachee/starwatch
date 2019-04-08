@@ -8,7 +8,7 @@ namespace Starwatch.API.Gateway.Models
 {
     struct Frame
     {
-        public byte Version => 4;
+        public byte Version => 5;
         public ushort Sequence { get; set; }
         public OpCode OpCode { get; set; }
         public string Identifier { get; set; }
