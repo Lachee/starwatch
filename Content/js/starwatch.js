@@ -4,8 +4,8 @@ class Starwatch
     {
         this.server = server;
         this.port = port;
-        this.secure = false;
-        this.url = (secure ? "wws://" : "ws://") + this.server + ":" + this.port;
+        this.secure = secure;
+        this.url = (secure ? "wss://" : "ws://") + this.server + ":" + this.port;
     
         this.logConnected = false;
         this.eventConnected = false;
