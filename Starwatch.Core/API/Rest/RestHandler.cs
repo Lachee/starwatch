@@ -1,21 +1,16 @@
 ﻿#define SKIP_REST_EXCEPTIONS
 
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 using Starwatch.API.Rest.Routing;
 using Starwatch.API.Util;
-using System.Threading.Tasks;
-using Starwatch.API;
 using System.Collections.Specialized;
 using Starwatch.API.Rest.Routing.Exceptions;
 using Starwatch.API.Web;

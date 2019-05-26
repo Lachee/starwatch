@@ -1,10 +1,7 @@
 ﻿using Starwatch.API.Util;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using WebSocketSharp.Server;
 
 namespace Starwatch.API.Web

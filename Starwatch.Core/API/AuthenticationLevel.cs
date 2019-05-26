@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Starwatch.API
+﻿namespace Starwatch.API
 {
     /// <summary>
     /// The type of authentication, ordered in terms of permission level, where SUperUser is the highest.

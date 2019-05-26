@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using WebSocketSharp.Server;
+﻿using WebSocketSharp.Server;
 
 namespace Starwatch.API
 {

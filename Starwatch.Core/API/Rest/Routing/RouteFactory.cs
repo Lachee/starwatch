@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Starwatch.API.Rest.Routing.Exceptions;
 using Starwatch.API.Rest.Serialization;
 

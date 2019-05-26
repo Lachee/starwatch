@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Starwatch.API.Rest.Serialization;
 
 namespace Starwatch.API.Rest.Routing

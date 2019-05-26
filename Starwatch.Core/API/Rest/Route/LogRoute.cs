@@ -1,9 +1,6 @@
 ﻿using Starwatch.API.Rest.Routing;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Starwatch.API.Web;
-using System.Text;
 using System.IO;
 
 namespace Starwatch.API.Rest.Route

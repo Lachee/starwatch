@@ -5,9 +5,7 @@ using Starwatch.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Text;
-using System.Timers;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 

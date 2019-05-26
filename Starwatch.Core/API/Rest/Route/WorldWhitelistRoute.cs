@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using Starwatch.API.Rest.Routing;
 using Starwatch.Entities;
 using Starwatch.API.Web;
-using Starwatch.Starbound;
-using Starwatch.API;
 using Starwatch.API.Rest.Serialization;
-using Newtonsoft.Json.Linq;
 using Starwatch.API.Rest.Route.Entities;
 using Starwatch.Extensions.Whitelist;
 

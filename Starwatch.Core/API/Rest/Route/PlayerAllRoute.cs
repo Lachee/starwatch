@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Starwatch.API.Rest.Routing;
+﻿using Starwatch.API.Rest.Routing;
 using Starwatch.API.Web;
-using Starwatch.Entities;
-using Starwatch.Starbound;
-using Starwatch.API;
-using Starwatch.API.Rest.Serialization;
 using System.Linq;
 using Starwatch.API.Gateway.Event;
 using Starwatch.API.Gateway;

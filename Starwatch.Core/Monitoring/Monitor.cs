@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Starwatch.Entities;
 using Starwatch.Logging;
 using Starwatch.Starbound;
@@ -9,7 +6,7 @@ using Starwatch.Util;
 
 namespace Starwatch.Monitoring
 {
-	public abstract class Monitor
+    public abstract class Monitor
 	{
 		public Server Server { get; }
 		public Logger Logger { get; }

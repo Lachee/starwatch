@@ -1,10 +1,7 @@
 ﻿using Newtonsoft.Json;
-using Starwatch.API.Rest.Route;
 using Starwatch.API.Rest.Routing;
 using Starwatch.API.Web;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using WebSocketSharp;
 using Starwatch.API.Gateway.Event;

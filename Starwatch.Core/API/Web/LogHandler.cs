@@ -1,6 +1,5 @@
 ﻿using Starwatch.API.Util;
 using Starwatch.Logging;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;

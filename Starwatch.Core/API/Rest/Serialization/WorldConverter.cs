@@ -1,8 +1,4 @@
-﻿using Starwatch.API.Rest.Serialization;
-using Starwatch.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Starwatch.Entities;
 
 namespace Starwatch.API.Rest.Serialization
 {

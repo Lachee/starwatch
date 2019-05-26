@@ -2,9 +2,7 @@
 using Starwatch.API.Gateway.Log.Models;
 using Starwatch.API.Gateway.Log.Payload;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using WebSocketSharp;
 

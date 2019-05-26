@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Principal;
-using System.Text;
 using WebSocketSharp.Net;
 
 namespace Starwatch.API

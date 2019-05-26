@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Starwatch.Entities;
 using Starwatch.Exceptions;
 using Starwatch.Logging;
@@ -9,7 +6,7 @@ using Starwatch.Starbound;
 
 namespace Starwatch.Monitoring
 {
-	class SegfaultMonitor : Monitor
+    class SegfaultMonitor : Monitor
 	{
         const string FATAL_ERROR = "Fatal Error: ";
 

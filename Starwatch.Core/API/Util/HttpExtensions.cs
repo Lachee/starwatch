@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using WebSocketSharp.Net;
 using WebSocketSharp;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace Starwatch.API.Util

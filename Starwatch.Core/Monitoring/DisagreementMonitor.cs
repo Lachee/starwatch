@@ -3,8 +3,6 @@ using Starwatch.Exceptions;
 using Starwatch.Starbound;
 using Starwatch.Util;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Starwatch.Monitoring

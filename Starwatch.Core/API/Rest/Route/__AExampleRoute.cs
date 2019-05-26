@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Starwatch.API.Web;
+﻿using Starwatch.API.Web;
 
 namespace Starwatch.API.Rest.Routing
 {

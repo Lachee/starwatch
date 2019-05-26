@@ -1,11 +1,8 @@
 ﻿using Starwatch.API.Gateway;
 using Starwatch.API.Rest.Routing;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Starwatch.API.Web;
-using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Route
 {

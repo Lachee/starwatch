@@ -1,9 +1,4 @@
-﻿using Starwatch.API.Rest.Serialization;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Starwatch.API.Rest.Serialization
+﻿namespace Starwatch.API.Rest.Serialization
 {
     class ConnectionConverter : IArgumentConverter
     {

@@ -1,10 +1,8 @@
 ﻿using Starwatch.Entities;
 using Starwatch.Monitoring;
 using Starwatch.Starbound;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Starwatch.Extensions.Whitelist

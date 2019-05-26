@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Starwatch.API.Rest
+﻿namespace Starwatch.API.Rest
 {
     public enum RestStatus
     {

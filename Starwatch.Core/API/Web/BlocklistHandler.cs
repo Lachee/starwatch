@@ -1,7 +1,5 @@
 ﻿using Starwatch.API.Util;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 

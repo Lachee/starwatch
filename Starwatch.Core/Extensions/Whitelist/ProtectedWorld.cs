@@ -1,9 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Starwatch.Entities;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Starwatch.Extensions.Whitelist
 {

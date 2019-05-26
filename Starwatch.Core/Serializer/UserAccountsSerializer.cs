@@ -2,8 +2,6 @@
 using Newtonsoft.Json.Linq;
 using Starwatch.Entities;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Starwatch.Serializer
 {

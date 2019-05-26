@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Starwatch.API.Web;
-using System.Text;
 
 namespace Starwatch.API.Rest.Route
 {

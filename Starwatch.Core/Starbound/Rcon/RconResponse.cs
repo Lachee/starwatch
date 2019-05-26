@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Starwatch.Starbound.Rcon
+﻿namespace Starwatch.Starbound.Rcon
 {
     /// <summary>
     /// Response from the RCON client.

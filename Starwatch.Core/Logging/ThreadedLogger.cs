@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Starwatch.Logging
 {
-	/// <summary>
-	/// A singleton queue that manages writing log entries to the different logging sources (Enterprise Library Logging) off the executing thread.
-	/// This queue ensures that log entries are written in the order that they were executed and that logging is only utilizing one thread (backgroundworker) at any given time.
-	/// </summary>
-	internal class OutputLogQueue : IDisposable
+    /// <summary>
+    /// A singleton queue that manages writing log entries to the different logging sources (Enterprise Library Logging) off the executing thread.
+    /// This queue ensures that log entries are written in the order that they were executed and that logging is only utilizing one thread (backgroundworker) at any given time.
+    /// </summary>
+    internal class OutputLogQueue : IDisposable
 	{
 		private static OutputLogQueue _current;
 		public static OutputLogQueue Current { get { return _current; } }

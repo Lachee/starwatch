@@ -1,7 +1,5 @@
 ﻿using Starwatch.Extensions.Backup;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Starwatch.API.Rest.Route.Entities
 {

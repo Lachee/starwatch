@@ -1,9 +1,4 @@
-﻿using Starwatch.API.Gateway;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Starwatch.API.Gateway.Event
+﻿namespace Starwatch.API.Gateway.Event
 {
     internal interface IGatewayRoute
     {

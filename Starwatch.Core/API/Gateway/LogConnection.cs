@@ -1,8 +1,4 @@
-﻿using Starwatch.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using WebSocketSharp;
 
 namespace Starwatch.API.Gateway
