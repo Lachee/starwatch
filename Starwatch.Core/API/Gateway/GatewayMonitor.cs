@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Diagnostics;
 using Starwatch.API.Rest.Route;
+using Starwatch.API.Rest;
 
 namespace Starwatch.API.Gateway
 {
@@ -15,20 +16,62 @@ namespace Starwatch.API.Gateway
         public ApiHandler Api => Server.Starwatch.ApiHandler;
         public GatewayMonitor(Server server) : base(server, "Gateway")
         {
+            //=== Player EVENTS
             server.Connections.OnPlayerConnect += (player) =>
-                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerConnect");
-            
+                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerConnect", query: new Web.Query() { { "skip_list", "true" } });
+
             server.Connections.OnPlayerDisconnect += (player, reason) =>
-                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerDisconnect", reason: reason);
+                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerDisconnect", reason: reason,  query: new Web.Query() { { "skip_list", "true" } });
 
             server.Connections.OnPlayerUpdate += (player) =>
-                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerUpdate");
+                Api.BroadcastRoute(new PlayerDetailsRoute(player), "OnPlayerUpdate", query: new Web.Query() { { "skip_list", "true" } });
+
+
+            //=== Server Events
+            server.OnKick += (sender, connection, reason, duration) =>
+                Api.BroadcastRoute(new PlayerDetailsRoute(server.Connections.GetPlayer(connection)), "OnKick", reason);
+
+            server.OnBan += (sender, ban) =>
+                Api.BroadcastRoute(new BanDetailsRoute(ban), "OnBan", ban.Reason);
             
+            //=== Account Events
+
+            //=== RCON EVENTS
             server.OnRconClientCreated += (starboundServer, rconClient) =>
+            {
                 rconClient.OnServerReload += (sender, rconResponse) =>
                     Api.BroadcastRoute(new ServerRoute(), "OnServerReload");
-            
+
+                rconClient.OnExecuteSuccess += (sender, rconResponse) =>
+                    Api.BroadcastRoute((gateway) =>
+                    {
+                        if (!gateway.Authentication.IsBot) return null;
+                        return rconResponse;
+                    }, "OnRconExecuteSuccess");
+
+                rconClient.OnExecuteFailure += (sender, rconResponse) =>
+                     Api.BroadcastRoute((gateway) =>
+                     {
+                         if (!gateway.Authentication.IsBot) return null;
+                         return rconResponse;
+                     }, "OnRconExecuteFailure");
+            };
         }
+
+        public override Task OnServerPreStart()
+        {
+            Server.Settings.Accounts.OnAccountAdd += (account) =>
+                Api.BroadcastRoute(new AccountDetailsRoute(account), "OnAccountAdd");
+
+            Server.Settings.Accounts.OnAccountUpdate += (account) =>
+                Api.BroadcastRoute(new AccountDetailsRoute(account), "OnAccountUpdate");
+
+            Server.Settings.Accounts.OnAccountRemove += (name) =>
+                Api.BroadcastRoute((gateway) => name, "OnAccountRemove");
+
+            return base.OnServerPreStart();
+        }
+
 
         public override Task OnServerStart()
         {
@@ -36,28 +79,27 @@ namespace Starwatch.API.Gateway
             return Task.CompletedTask;
         }
 
-        public override Task OnServerExit()
+        public override Task OnServerExit(string reason)
         {
-            Api.BroadcastRoute(new ServerRoute(), "OnServerExit");
+            Api.BroadcastRoute(new ServerRoute(), "OnServerExit", reason: reason);
             return Task.CompletedTask;
         }
 
-        public override async Task<bool> HandleMessage(Message msg) { await SendLogEvent(msg); return false; }
-
-        /// <summary>
-        /// Sends the log event to every gateway connection that is listening
-        /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        private async Task SendLogEvent(Message message)
+        public override Task<bool> HandleMessage(Message msg)
         {
-            //foreach (var gateway in Api.GetGatewayConnections<GatewayJsonConnection>("/events").Where(gw => !gw.HasTerminated))
-            //    gateway.SendEvent("LOG", message);
-
-            foreach (var gateway in Api.GetGatewayConnections<GatewayLogConnection>("/log").Where(gw => gw.Filter.LogEvents && gw.IsReady))
+            if (msg.IsChat)
             {
-                await gateway.SendPayload(new Payload.LogEvent() { Message = message });
+                //Chats can go over regular events
+                Api.BroadcastRoute((gateway) =>
+                {
+                    if (!gateway.Authentication.IsAdmin) return null;
+                    return msg;
+                }, "OnChat");
             }
-        }        
+
+            //Broadcast the log
+            Api.BroadcastLog(msg.ToString());
+            return Task.FromResult(false);
+        }      
     }
 }

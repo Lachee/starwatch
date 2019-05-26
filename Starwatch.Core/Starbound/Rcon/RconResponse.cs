@@ -9,6 +9,9 @@ namespace Starwatch.Starbound.Rcon
     /// </summary>
     public struct RconResponse
     {
+        /// <summary>
+        /// The command that was executed
+        /// </summary>
         public string Command { get; set; }
 
         /// <summary>

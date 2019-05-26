@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
+using Starwatch.API.Gateway.Event;
 
 namespace Starwatch.API
 {
@@ -231,8 +232,8 @@ namespace Starwatch.API
 
             //Service
             //HttpServer.AddWebSocketService("/", () => new Gateway.GatewayConnection(this));
-            HttpServer.AddWebSocketService<Gateway.GatewayJsonConnection>(GATEWAY_EVENT_SERVICE, gc => gc.Initialize(this));
-            HttpServer.AddWebSocketService<Gateway.GatewayLogConnection>(GATEWAY_LOG_SERVICE, gc => gc.Initialize(this));
+            HttpServer.AddWebSocketService<Gateway.EventConnection>(GATEWAY_EVENT_SERVICE, gc => gc.Initialize(this));
+            HttpServer.AddWebSocketService<Gateway.LogConnection>(GATEWAY_LOG_SERVICE, gc => gc.Initialize(this));
 
             //Start the actual server
             Logger.Log("Starting HTTP Server on port {0}, secured: {1}", Port, IsSecure);
@@ -434,8 +435,7 @@ namespace Starwatch.API
         internal void BroadcastRoute<T>(T route, string evt, string reason = "", Query query = null) where T : RestRoute, IGatewayRoute
         {
             var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
-
-            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as GatewayJsonConnection))
+            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as EventConnection))
             {
                 try
                 {
@@ -444,10 +444,56 @@ namespace Starwatch.API
                 catch (Exception e)
                 {
                     Logger.LogError(e, "Failed to send event to connection "+con+": {0}");
+                    con.Terminate(WebSocketSharp.CloseStatusCode.ServerError, "event send error");
                 }
             }
         }
 
-        #endregion
+        /// <summary>
+        /// Sends a route event over the gateway but uses a callback to generate the results.
+        /// </summary>
+        /// <param name="callback"></param>
+        /// <param name="evt"></param>
+        /// <param name="reason"></param>
+        /// <param name="query"></param>
+        internal void BroadcastRoute(GatewayEventPayloadCallback callback, string evt, string reason = "")
+        {
+            var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
+            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as EventConnection))
+            {
+                try
+                {
+                    con.SendRoute(callback, evt, reason);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "Failed to send event to connection " + con + ": {0}");
+                    con.Terminate(WebSocketSharp.CloseStatusCode.ServerError, "event send error");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Broadcasts a log to all those who are listening
+        /// </summary>
+        /// <param name="log"></param>
+        internal void BroadcastLog(string log)
+        {
+            var serviceHost = HttpServer.WebSocketServices[GATEWAY_LOG_SERVICE];
+            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as LogConnection))
+            {
+                try
+                {
+                    con.SendLog(log);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "Failed to send log to connection " + con + ": {0}");
+                    con.Terminate(WebSocketSharp.CloseStatusCode.ServerError, "log send error");
+                }
+            }
+        }
+
+       #endregion
     }
 }

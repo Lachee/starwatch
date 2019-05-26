@@ -51,7 +51,8 @@ namespace Starwatch.Monitoring
                 if (!await CheckServerUDP(address, Server.Settings.QueryServerPort))
                 {
                     Logger.Log("Server requires UDP restart!");
-                    await Server.Terminate();
+                    Server.ApiHandler.BroadcastRoute(new API.Rest.Route.ServerStatisticsRoute(), "OnUdpCrash");
+                    await Server.Terminate("UDP Failed to respond");
                 }
             };
             _checkTimer.Start();

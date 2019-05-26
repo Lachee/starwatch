@@ -23,9 +23,11 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnPost(Query query, object payloadObject)
         {
+#if !SKIP_SSL_ENFORCE
             //Server must be in SSL mode
-            if (RestHandler.ENFORCE_SSL_PASSWORDS && !Handler.ApiHandler.IsSecure)
+            if (!Handler.ApiHandler.IsSecure)
                 return new RestResponse(RestStatus.Forbidden, msg: "Cannot set passwords if the server is not SSL");
+#endif
 
             //Validate the account
             AccountPatch account = (AccountPatch)payloadObject;

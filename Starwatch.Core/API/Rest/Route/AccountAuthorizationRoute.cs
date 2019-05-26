@@ -29,8 +29,11 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnPost(Query query, object payloadObject)
         {
-            if (RestHandler.ENFORCE_SSL_PASSWORDS && !Handler.ApiHandler.IsSecure)
+
+#if !SKIP_SSL_ENFORCE
+            if (!Handler.ApiHandler.IsSecure)
                 return new RestResponse(RestStatus.Forbidden, msg: "Server is forbidden to handle passwords unless its using SSL.");
+#endif
 
             Payload payload = (Payload)payloadObject;
             return new RestResponse(RestStatus.OK, BCrypt.Net.BCrypt.Verify(Account.Password, payload.Hash));

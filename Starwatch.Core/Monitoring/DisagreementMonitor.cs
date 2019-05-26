@@ -1,4 +1,5 @@
 ﻿using Starwatch.Entities;
+using Starwatch.Exceptions;
 using Starwatch.Starbound;
 using Starwatch.Util;
 using System;
@@ -37,8 +38,9 @@ namespace Starwatch.Monitoring
                 if (msg.Content.StartsWith(DISAGREEMENT_KEY))
                 {
                     //Attempt to find the person
-                    int colonIndex = msg.Content.IndexOf(':');
-                    string client = msg.Content.Cut(DISAGREEMENT_KEY.Length + 1, colonIndex);
+                    var coloni = msg.Content.IndexOf(':');
+                    var client = msg.Content.Cut(DISAGREEMENT_KEY.Length + 1, coloni);
+                    var report = new DisagreementCrashReport() { Content = msg.ToString() };
 
                     //Parse the name
                     if (int.TryParse(client, out var cid))
@@ -51,26 +53,41 @@ namespace Starwatch.Monitoring
                             player = Server.Connections.LastestPlayer;
                         }
 
-                        //ban the player
+                        //ban the players
+                        report.Player = player;
                         await Server.Ban(player, BanFormat, "disagrement-monitor", false, false);
-                        return true;
                     }
                     else
                     {
                         Logger.LogWarning("Failed to parse the client " + client + ", giving up and just aborting.");
-                        return true;
                     }
+
+                    //Send a API log to the error
+                    Server.ApiHandler.BroadcastRoute((gateway) =>
+                    {
+                        if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
+                        return report;
+                    }, "OnDisagreementCrash");
+
+                    //Throw the exception, forcing shutdown
+                    throw new ServerShutdownException("Disagreement Exception");
                 }
             }
             catch (Exception e)
             {
                 //Throw an error and just abort by default.
                 Logger.LogError(e);
+                Server.LastShutdownReason = $"Disagreement Shutdown: {e.Message}";
                 return true;
             }
 
             return false;
         }
 
+        struct DisagreementCrashReport
+        {
+            public string Content { get; set; }
+            public Player Player { get; set; }
+        }
     }
 }

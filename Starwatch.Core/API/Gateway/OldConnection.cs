@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
-using Starwatch.API.Gateway.Models;
-using Starwatch.API.Gateway.Payload;
+using Starwatch.API.Gateway.Log.Models;
+using Starwatch.API.Gateway.Log.Payload;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +11,7 @@ using WebSocketSharp;
 namespace Starwatch.API.Gateway
 {
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    class GatewayLogConnection : GatewayConnection
+    class OldConnection : GatewayConnection
     {
         public override string ToString() => $"GatewayLogs({Identifier})";
 
@@ -43,7 +43,7 @@ namespace Starwatch.API.Gateway
         [JsonProperty]
         public Filter Filter { get; private set; }
 
-        public GatewayLogConnection()
+        public OldConnection()
         {
             Sequence = 0;
             IsReady = false;
@@ -109,7 +109,7 @@ namespace Starwatch.API.Gateway
                         IsReady = true;
 
                         //Return hello
-                        await SendPayload(new Payload.Welcome() { Connection = ConnectionID, ID = Identifier, Agent = Agent });
+                        await SendPayload(new Log.Payload.Welcome() { Connection = ConnectionID, ID = Identifier, Agent = Agent });
                         break;
 
                     case OpCode.Heartbeat:

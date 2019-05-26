@@ -9,6 +9,7 @@ using Starwatch.API.Rest.Serialization;
 using System.Threading.Tasks;
 using Starwatch.Starbound.Rcon;
 using Starwatch.API.Gateway;
+using Starwatch.API.Gateway.Event;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -25,20 +26,20 @@ namespace Starwatch.API.Rest.Route
         }
         
         public string GetRouteName() => "/player/:cid";
-        public void SetGateway(GatewayJsonConnection jsonConnection)
+        public void SetGateway(EventConnection jsonConnection)
         {
             this.Handler = jsonConnection.API.RestHandler;
             this.Authentication = jsonConnection.Authentication;
         }
-
-
+        
         public override RestResponse OnGet(Query query)
         {
             //Make sure the player exists
             if (Player == null) return RestResponse.ResourceNotFound;
 
             //The user hasn't gotten a UUID yet, we will force a refresh.
-            if (Player.UUID == null) Starbound.Connections.RefreshListing().Wait();
+            if (!query.GetBool("skip_list", false) && Player.UUID == null)
+                Starbound.Connections.RefreshListing().Wait();
 
             //We are enforcing a valid location, so refresh their location.
             if (query.GetBool("enforce", false))

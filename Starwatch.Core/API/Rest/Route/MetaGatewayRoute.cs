@@ -21,10 +21,10 @@ namespace Starwatch.API.Rest.Route
 
 
             serviceHost = Handler.HttpServer.WebSocketServices["/log"];
-            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as GatewayLogConnection));
+            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as LogConnection));
 
             serviceHost = Handler.HttpServer.WebSocketServices["/events"];
-            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as GatewayJsonConnection));
+            gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as EventConnection));
 
             //TODO: Make this list all sessions, not just last one
             return new RestResponse(RestStatus.OK, res: new GatewayListing()

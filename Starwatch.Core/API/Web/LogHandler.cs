@@ -16,7 +16,7 @@ namespace Starwatch.API.Web
         private const string BASE_LOG = "starbound_server.log";
 
         public Logger Logger { get; }
-        public bool ShowListing { get; set; } = false;
+        public bool ShowListing { get; set; } = true;
         public ApiHandler ApiHandler { get; }
         public Starbound.Server Starbound => ApiHandler.Starwatch.Server;
 

@@ -38,7 +38,6 @@ namespace Starwatch.Starbound
         /// </summary>
         public Connections Connections { get; private set; }
 
-
         /// <summary>
         /// The settings for the server
         /// </summary>
@@ -53,6 +52,13 @@ namespace Starwatch.Starbound
         /// The RCON Client for the server.
         /// </summary>
         public Rcon.StarboundRconClient Rcon { get; private set; }
+
+        /// <summary>
+        /// The last message for the shutdown.
+        /// </summary>
+        public string LastShutdownReason { get; set; }
+
+        public API.ApiHandler ApiHandler => Starwatch.ApiHandler;
 
         #region Events
         /// <summary>
@@ -151,6 +157,11 @@ namespace Starwatch.Starbound
         public T[] GetMonitors<T>() where T : Monitor => _monitors.Where(m => m.GetType().IsAssignableFrom(typeof(T))).Select(m => (T)m).ToArray();
 
         #region Helpers
+        
+        public delegate void OnBanEvent(object sender, Ban ban);
+        public delegate void OnKickEvent(object sender, int connection, string reason, int duration);
+        public event OnBanEvent OnBan;
+        public event OnKickEvent OnKick;
 
         /// <summary>
         /// Kicks the given player for the given reason. Returns true if successful. Alias of <see cref="Rcon.StarboundRconClient.Kick(int, string)"/>.
@@ -170,8 +181,11 @@ namespace Starwatch.Starbound
             }
 
             //Kick the connection
-            return await Rcon.Kick(connection, reason);
+            var response = await Rcon.Kick(connection, reason);
+            OnKick?.Invoke(this, connection, reason, -1);
+            return response;
         }
+        
 
         /// <summary>
         /// Kicks the player for the given reason and duration.
@@ -184,7 +198,9 @@ namespace Starwatch.Starbound
         public async Task<Rcon.RconResponse> Kick(int connection, string reason, int duration)
         {
             if (duration <= 0) return new Rcon.RconResponse() { Success = false, Message = "Invalid duration." };
-            return await Rcon.Ban(connection, reason, BanType.IP, duration);
+            var response = await Rcon.Ban(connection, reason, BanType.IP, duration);
+            OnKick?.Invoke(this, connection, reason, duration);
+            return response;
         }
 
         /// <summary>
@@ -249,6 +265,9 @@ namespace Starwatch.Starbound
                 return -1;
             }
 
+            //Invoke the on ban
+            OnBan?.Invoke(this, ban);
+
             //Reload the server
             if (reload)
             {
@@ -298,8 +317,9 @@ namespace Starwatch.Starbound
         /// Forces the server to terminate. and waits for it to terminate.
         /// </summary>
         /// <returns></returns>
-        public async Task Terminate()
+        public async Task Terminate(string reason = null)
         {
+            LastShutdownReason = reason ?? LastShutdownReason;
             if (_processAbortTokenSource != null)
             {
                 Logger.Log("Terminating process (via token)");
@@ -449,6 +469,7 @@ namespace Starwatch.Starbound
 
                 //sstart of the process
                 Logger.Log("Staring Starbound Process");
+                LastShutdownReason = null;
                 bool success = _process.Start();
                 if (success)
                 {
@@ -546,20 +567,21 @@ namespace Starwatch.Starbound
                 #endregion
             }
 
-            //Invoke exit event
+            //Validate the shutdown message, setting default if there isnt one
+            LastShutdownReason = LastShutdownReason ?? "Server closed for unkown reason";            
             foreach (var m in _monitors)
             {
                 try
                 {
                     Logger.Log("OnServerExit {0}", m.Name);
-                    await m.OnServerExit();
+                    await m.OnServerExit(LastShutdownReason);
                 }
                 catch (Exception e)
                 {
                     Logger.LogError(e, "OnServerExit ERR - " + m.Name + ": {0}");
                 }
             }
-
+            
             //We have terminated, so dispose of us properly
             Logger.Log("Attempting to terminate process just in case of internal error.");
             await Kill();
@@ -597,6 +619,13 @@ namespace Starwatch.Starbound
                             shouldTerminate = true;
                         }
 
+                    }
+                    catch (Exceptions.ServerShutdownException e)
+                    {
+                        Logger.Log($"Server Restart Requested by {m.Name}: {e.Message}");
+                        LastShutdownReason = e.Message;
+                        shouldTerminate = true;
+                        break;
                     }
                     catch (Exception e)
                     {

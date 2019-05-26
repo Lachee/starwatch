@@ -262,7 +262,7 @@ namespace Starwatch.Starbound
 
             return base.OnServerStart();
         }
-        public override Task OnServerExit()
+        public override Task OnServerExit(string reason)
         {
             //Clear all pending connections and existing connections.
             _pending.Clear();
@@ -272,7 +272,7 @@ namespace Starwatch.Starbound
             if (_uuidTimer != null) _uuidTimer.Stop();
             
             //We do not send any events as what ever client that listens to this should expect a server exit to result in 0 connections.
-            return base.OnServerExit();
+            return base.OnServerExit(reason);
         }
         #endregion
 
@@ -445,7 +445,7 @@ namespace Starwatch.Starbound
             if (player.Username.Contains('<')) containsIllegalCharacters = true;
             if (player.Username.Contains(')')) containsIllegalCharacters = true;
             if (player.Username.Contains('(')) containsIllegalCharacters = true;
-            if (player.Username.Contains("Lachee") && player.AccountName != "Lachee") containsIllegalCharacters = true;
+            if (player.Username.Contains("Lachee") && player.AccountName.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
             if (containsIllegalCharacters)
             {
                 await Server.Kick(player.Connection, "Character name contains illegal characters.");

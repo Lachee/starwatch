@@ -32,7 +32,8 @@ class StarwatchClient
 		this.allowLog = true;
 		
 		this.rateLimitEmbago = null;
-		this.rateLimitTimeout = 0;
+        this.rateLimitTimeout = 0;
+        
 		this._sequence = 0;
         this._socket = null;
         this.isConnected = false;

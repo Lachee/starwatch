@@ -9,10 +9,16 @@
 <script>
 
     var protocol = location.protocol == "https:" ? "wws:" : "ws:";
-    var addr = protocol + "//" + location.hostname + ":" + (location.port ? location.port : 80) + "/events";
+    var addr = protocol + "//" + location.hostname + ":" + (location.port ? location.port : 80);
     
-    var ws = new WebSocket(addr)
-    ws.onopen = function (event) { console.log("OPEN", event); }
-    ws.onclose = function (event) { console.log("CLOSE", event); }
-    ws.onmessage = function (event) { console.log("MSG", JSON.parse(event.data)); }
+    //var log_ws = new WebSocket(addr + "/log")
+    //log_ws.onopen = function (event) { console.log("OPEN", event); }
+    //log_ws.onclose = function (event) { console.log("CLOSE", event); }
+    //log_ws.onmessage = function (event) { console.log("LOG", event.data); }
+
+    var evt_ws = new WebSocket(addr + "/events")
+    evt_ws.onopen = function (event) { console.log("OPEN", event); }
+    evt_ws.onclose = function (event) { console.log("CLOSE", event); }
+    evt_ws.onmessage = function (event) { console.log("EVT",  JSON.parse(event.data)); }
+
 </script>

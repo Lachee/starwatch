@@ -71,12 +71,19 @@ We detected the race ^white;'{key}'
                         player = Server.Connections.LastestPlayer;
                     }
 
+                    //Send a API log to the error
+                    Server.ApiHandler.BroadcastRoute((gateway) =>
+                    {
+                        if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
+                        return msg;
+                    }, "OnCustomRaceCrash");
+
                     //Prepare the reason
                     string reason = BanFormat.Replace("{key}", _errorKey);
 
                     //Ban and restart
                     await Server.Ban(player, reason, "race-monitor", false, false);
-                    return true;
+                    throw new Exceptions.ServerShutdownException("Custom race detected");
                 }
             }            
 

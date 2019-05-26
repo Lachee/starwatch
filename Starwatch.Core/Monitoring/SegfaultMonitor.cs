@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Starwatch.Entities;
+using Starwatch.Exceptions;
 using Starwatch.Logging;
 using Starwatch.Starbound;
 
@@ -22,7 +23,16 @@ namespace Starwatch.Monitoring
                 if (msg.Content.StartsWith(FATAL_ERROR))
                 {
                     Logger.LogError("Fatal error has occured: " + msg);
-                    return Task.FromResult(true);
+
+                    //Send a API log to the error
+                    Server.ApiHandler.BroadcastRoute((gateway) =>
+                    {
+                        if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
+                        return msg;
+                    }, "OnSegfaultCrash");
+
+                    //Throw the error, causing everything to abort
+                    throw new ServerShutdownException("Fatal Exception: " + msg);
                 }
             }
 

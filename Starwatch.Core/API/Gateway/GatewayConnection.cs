@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Server;
-using Starwatch.API.Gateway.Models;
-using Starwatch.API.Gateway.Payload;
+using Starwatch.API.Gateway.Log.Models;
+using Starwatch.API.Gateway.Log.Payload;
 using Starwatch.Entities;
 using System.Threading;
 

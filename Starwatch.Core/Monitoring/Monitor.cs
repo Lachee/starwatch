@@ -48,7 +48,7 @@ namespace Starwatch.Monitoring
         /// Called when ever the server exits.
         /// </summary>
         /// <returns></returns>
-        public virtual Task OnServerExit() => Task.CompletedTask;
+        public virtual Task OnServerExit(string reason) => Task.CompletedTask;
 
         public virtual Task<bool> HandleMessage(Message msg) => Task.FromResult(false);
 

@@ -8,11 +8,13 @@ using Newtonsoft.Json;
 using Starwatch.API.Rest.Route.Entities;
 using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Web;
+using Starwatch.API.Gateway.Event;
+using Starwatch.API.Gateway;
 
 namespace Starwatch.API.Rest.Route
 {
     [Route("/account/:account", AuthLevel.Bot)]
-    class AccountDetailsRoute : RestRoute
+    class AccountDetailsRoute : RestRoute, IGatewayRoute
     {
         [Argument("account", Converter = typeof(AccountConverter))]
         public Account Account { get; set; }
@@ -21,6 +23,14 @@ namespace Starwatch.API.Rest.Route
 
 
         public AccountDetailsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+        public AccountDetailsRoute(Account account) : base(null, null) { Account = account; }
+
+        public string GetRouteName() => "/account/:account";
+        public void SetGateway(EventConnection gateway)
+        {
+            Handler = gateway.API.RestHandler;
+            Authentication = gateway.Authentication;
+        }
 
         /// <summary>
         /// Gets the account exists and its admin state.
@@ -67,8 +77,10 @@ namespace Starwatch.API.Rest.Route
             if (oa.IsAdmin.HasValue && AuthenticationLevel < AuthLevel.SuperBot)
                 return new RestResponse(RestStatus.Forbidden, msg: "Only SuperBots or above may patch admin accounts");
 
-            if (RestHandler.ENFORCE_SSL_PASSWORDS && oa.Password != null && !Handler.ApiHandler.IsSecure)
+#if !SKIP_SSL_ENFORCE
+            if (oa.Password != null && !Handler.ApiHandler.IsSecure)
                 return new RestResponse(RestStatus.Forbidden, msg: "Cannot set passwords if the server is not SSL");
+#endif
 
             string username = oa.Name ?? Account.Name;
             string password = oa.Password ?? Account.Password;
@@ -98,6 +110,7 @@ namespace Starwatch.API.Rest.Route
                 //Edit the individual parts of the account
                 Account.Password = password;
                 Account.IsAdmin = isAdmin;
+                Starbound.Settings.Accounts.UpdateAccount(Account, password, isAdmin);
             }
 
             //Save the settings

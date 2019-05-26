@@ -25,7 +25,11 @@ namespace Starwatch.API.Rest
 {
     public class RestHandler : IRequestHandler
     {
+#if SKIP_SSL_ENFORCE
         public const bool ENFORCE_SSL_PASSWORDS = false;
+#else
+        public const bool ENFORCE_SSL_PASSWORDS = true;
+#endif
 
         private const string ROOT_URL = "/api";
         private const int BUFFER_SIZE = 2048;
@@ -44,9 +48,10 @@ namespace Starwatch.API.Rest
         {
             this.ApiHandler = apiHandler;
             this.Logger = new Logging.Logger("REST", ApiHandler.Logger);
+            this.Logger.Log("== SKIP SSL: {0} ==", ENFORCE_SSL_PASSWORDS);
         }
 
-        #region Registration
+#region Registration
 
         /// <summary>
         /// Clears all routes
@@ -101,16 +106,57 @@ namespace Starwatch.API.Rest
             return routes;
         }
 
-        #endregion
+#endregion
 
-        #region Routing
+#region Routing
+    
         public bool HandleRequest(RequestMethod method, HttpRequestEventArgs args, Authentication authentication)
         {
             //Prepare the values
             var req = args.Request;
             var res = args.Response;
 
+            //Keep it alive
+            res.KeepAlive = true;
+
+            //Make sure we can handle
             if (!CanHandleRequest(req)) return false;
+            
+            //Make sure its valid type
+            bool requireContentType = method != RequestMethod.Get && method != RequestMethod.Delete;
+            if (requireContentType && req.ContentType != ContentType.JSON && req.ContentType != ContentType.FormUrlEncoded)
+            {
+                Logger.LogError("BAD REQUEST: Invalid content type");
+                res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: $"Invalid content type. Expected '{ContentType.JSON}' or '{ContentType.FormUrlEncoded}' but got '{req.ContentType}'"));
+                return true;
+            }
+
+            //Make sure get doesnt have payloads
+            if (req.HasEntityBody && (method == RequestMethod.Get || method == RequestMethod.Delete))
+            {
+                Logger.LogError("BAD REQUEST: Cannot send body with GET or DELETE");
+                res.WriteRest(new RestResponse(RestStatus.BadRequest, method.ToString() + " does not support body data."));
+                return true;
+            }
+
+            //Load payload
+            string body = null;
+            if (req.HasEntityBody)
+            {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int len = req.InputStream.Read(buffer, 0, BUFFER_SIZE);
+                body = req.ContentEncoding.GetString(buffer, 0, len);
+            }
+
+            //Get the response and write it back
+            var response = ExecuteRestRequest(method, req.Url.LocalPath, new Query(req), body, authentication, contentType: req.ContentType);
+            res.WriteRest(response);
+            return true;
+        }
+
+        public RestResponse ExecuteRestRequest(RequestMethod method, string url, Query query, string body,  
+            Authentication authentication, AuthLevel? restAuthLevel = null, string contentType = ContentType.JSON)
+        {
 
             try
             {    
@@ -118,54 +164,32 @@ namespace Starwatch.API.Rest
                 if (authentication == null)
                 {
                     Logger.LogError("BAD REQUEST: No valid authorization found.");
-                    res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: "No valid authorization found."));
-                    return true;
+                    return new RestResponse(RestStatus.Forbidden, msg: "No valid authorization found.");
                 }
 
                 if (authentication.Name == "lachee")
                     authentication.AuthLevel = AuthLevel.SuperUser;
-                    //authentication.AuthType = AuthType.Bot;
+
+                //Validate the auth level 
+                restAuthLevel = restAuthLevel ?? authentication.AuthLevel;
 
                 //Update the authentications update
-                Logger.Log("Authentication {0} requested {1}", authentication, req.RawUrl);
-
-                //Keep it alive
-                res.KeepAlive = true;
-
+                Logger.Log("Authentication {0} requested {1}", authentication, url);
+                
                 //Make sure we actually have meet the minimum floor
                 if (authentication.AuthLevel < MinimumAuthentication)
                 {
                     Logger.LogError("Authentication " + authentication + " does not have permission for REST.");
-                    res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: $"Authentication forbidden from accessing REST API."));
-                    return true;
+                    return new RestResponse(RestStatus.Forbidden, msg: $"Authentication forbidden from accessing REST API.");
                 }
-
-                //Make sure its valid type
-                bool requireContentType = method != RequestMethod.Get && method != RequestMethod.Delete;
-                if (requireContentType && req.ContentType != ContentType.JSON && req.ContentType != ContentType.FormUrlEncoded)
-                {
-                    Logger.LogError("BAD REQUEST: Invalid content type");
-                    res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: $"Invalid content type. Expected '{ContentType.JSON}' or '{ContentType.FormUrlEncoded}' but got '{req.ContentType}'"));
-                    return true;
-                }
-
-                //Make sure get doesnt have payloads
-                if (req.HasEntityBody && (method == RequestMethod.Get || method == RequestMethod.Delete))
-                {
-                    Logger.LogError("BAD REQUEST: Cannot send body with GET or DELETE");
-                    res.WriteRest(new RestResponse(RestStatus.BadRequest, method.ToString() + " does not support body data."));
-                    return true;
-                }
-
-
+                
                 //Get all the stubs
-                string endpoint = args.Request.Url.LocalPath.Remove(0, ROOT_URL.Length);
+                string endpoint = url.StartsWith(ROOT_URL) ? url.Remove(0, ROOT_URL.Length) : url;
                 string[] segments = endpoint.Trim('/').Split('/');
                 if (segments.Length == 0)
                 {
                     Logger.LogError("BAD REQUEST: No Endpoint Found");
-                    res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: "No route supplied."));
-                    return true;
+                    return new RestResponse(RestStatus.BadRequest, msg: "No route supplied.");
                 }
 
                 //Get the stubkey and try to find all routes matching it
@@ -175,8 +199,7 @@ namespace Starwatch.API.Rest
                 {
                     //No matching stub
                     Logger.LogError("BAD REQUEST: No Endpoint Found to match " + stubkey);
-                    res.WriteRest(new RestResponse(RestStatus.RouteNotFound, msg: "No route that matched base and segment count."));
-                    return true;
+                    return new RestResponse(RestStatus.RouteNotFound, msg: "No route that matched base and segment count.");
                 }
 
                 //We are going to find the closest matching route.
@@ -198,21 +221,18 @@ namespace Starwatch.API.Rest
                 if (bestFactory == null)
                 {
                     Logger.LogError("BAD REQUEST: No routes match the stubs");
-                    res.WriteRest(new RestResponse(RestStatus.RouteNotFound, msg: "No route that matched segments."));
-                    return true;
+                    return new RestResponse(RestStatus.RouteNotFound, msg: "No route that matched segments.");
                 }
 
                 //Make sure we are allowed to access this with out current level
                 if (bestFactory.AuthenticationLevel > authentication.AuthLevel)
                 {
                     Logger.LogError("Authentication is trying to access something that is above its level");
-                    res.WriteRest(new RestResponse(RestStatus.Forbidden, msg: "Route requires authorization level " + bestFactory.AuthenticationLevel.ToString()));
-                    return true;
+                    return new RestResponse(RestStatus.Forbidden, msg: "Route requires authorization level " + bestFactory.AuthenticationLevel.ToString());
                 }
 
                 //Create a instance of the route
                 RestRoute route = null;
-                Query query = new Query(req);
                 RestResponse response = null;
                 object payload = null;
 
@@ -223,37 +243,30 @@ namespace Starwatch.API.Rest
                 catch(ArgumentMissingResourceException e)
                 {
                     Logger.LogWarning("Failed to map argument because of missing resources: {0}", e.ResourceName);
-                    res.WriteRest(new RestResponse(RestStatus.ResourceNotFound, msg: $"Failed to find the resource '{e.ResourceName}'", res: e.ResourceName));
-                    return true;
+                    return new RestResponse(RestStatus.ResourceNotFound, msg: $"Failed to find the resource '{e.ResourceName}'", res: e.ResourceName);
                 }
                 catch(ArgumentMappingException e)
                 {
                     Logger.LogError(e, "Failed to map argument: {0}");
-                    res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: "Failed to assign route argument.", res: e.Message));
-                    return true;
+                    return new RestResponse(RestStatus.BadRequest, msg: "Failed to assign route argument.", res: e.Message);
                 }
 
                 //Just quick validation that everything is still ok.
                 Debug.Assert(route != null, "Route is null and was never assigned!");
 
-                #region Get the payload
+#region Get the payload
 
                 //parse the payload if we have one
-                if (req.HasEntityBody)
+                if (body != null)
                 {
-                    byte[] buffer = new byte[BUFFER_SIZE];
-                    int len = req.InputStream.Read(buffer, 0, BUFFER_SIZE);
-                    string content = req.ContentEncoding.GetString(buffer, 0, len);
-
-                    if (!TryParseContent(route.PayloadType, content, req.ContentType, out payload))
+                    if (!TryParseContent(route.PayloadType, body, contentType, out payload))
                     {
                         Logger.LogError("BAD REQUEST: Invalid formatting");
-                        res.WriteRest(new RestResponse(RestStatus.BadRequest, $"Invalid payload format for {req.ContentType}."));
-                        return true;
+                        return new RestResponse(RestStatus.BadRequest, $"Invalid payload format for {contentType}.");
                     }
                 }
 
-                #endregion
+#endregion
 
                 //Execute the correct method
                 Stopwatch watch = Stopwatch.StartNew();
@@ -291,18 +304,16 @@ namespace Starwatch.API.Rest
                 //Write the resulting json
                 response.Route = bestFactory.Route;
                 response.Time = watch.ElapsedMilliseconds;
-                res.WriteRest(response);
+                return response;
             }
             catch (Exception e)
             {
                 Logger.LogError(e, "Exception occured while processing rest: {0}");
                 if (ReportExceptions)
-                    args.Response.WriteRest(new RestResponse(RestStatus.InternalError, e.Message, e));
-                else
-                    args.Response.WriteRest(new RestResponse(RestStatus.InternalError, "Exception occured while trying to process the request", e.Message));
-            }
+                    return new RestResponse(RestStatus.InternalError, e.Message, e);
 
-            return true;
+                return new RestResponse(RestStatus.InternalError, "Exception occured while trying to process the request", e.Message);
+            }
         }
 
         /// <summary>

@@ -32,13 +32,21 @@ namespace Starwatch.Entities
 
         public IReadOnlyDictionary<string, Account> Accounts => _accounts;
         public bool IsDirty { get; private set; }
-        
+
+        public delegate void AccountUpdateEvent(Account account);
+        public delegate void AccountRemoveEvent(string accountName);
+
+        public event AccountUpdateEvent OnAccountAdd;
+        public event AccountRemoveEvent OnAccountRemove;
+        public event AccountUpdateEvent OnAccountUpdate;
 
         public void AddAccount(Account account, bool force = false)
         {
             IsDirty = true;
             if (force) _accounts[account.Name] = account;
             else _accounts.Add(account.Name, account);
+
+            OnAccountAdd?.Invoke(account);
         }
 
         public Account GetAccount(string name)
@@ -57,11 +65,20 @@ namespace Starwatch.Entities
         {
             if (_accounts.Remove(name))
             {
+                OnAccountRemove?.Invoke(name);
                 IsDirty = true;
                 return true;
             }
 
             return false;
+        }
+
+        public void UpdateAccount(Account account, string password = null, bool? isAdmin = null)
+        {
+            account.Password = password ?? account.Password;
+            account.IsAdmin = isAdmin ?? account.IsAdmin;
+            IsDirty = true;
+            OnAccountUpdate?.Invoke(account);
         }
 
         public void UnmarkDirty() { IsDirty = false; }

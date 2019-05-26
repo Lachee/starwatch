@@ -5,6 +5,10 @@
     <RootNamespace>Starwatch</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;SKIP_SSL_ENFORCE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="3.1.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />

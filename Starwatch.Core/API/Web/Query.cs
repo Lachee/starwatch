@@ -15,6 +15,7 @@ namespace Starwatch.API.Web
 
         public Query() : base(0) { }
         public Query(int capacity) : base(capacity) { }
+        public Query(Dictionary<string, string> collection) : base(collection) { }
         public Query(HttpListenerRequest request) : this(request.QueryString) { }
         public Query(NameValueCollection collection) : base(collection.Count)
         {

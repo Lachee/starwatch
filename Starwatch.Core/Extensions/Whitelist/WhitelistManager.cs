@@ -31,14 +31,18 @@ namespace Starwatch.Extensions.Whitelist
             //Sub to the teleport events
             Server.Connections.OnPlayerUpdate += async (player) =>
             {
-                ProtectedWorld world;
-                if (_protectedWorlds.TryGetValue(player.Location.Whereami, out world))
+                if (player.Location != null)
                 {
-                    if (!world.ValidateAccount(player.AccountName))
+                    ProtectedWorld world;
+                    if (_protectedWorlds.TryGetValue(player.Location.Whereami, out world))
                     {
-                        Logger.Log("Player " + player + " is not allowed in world " + world.World + " because of " + world.Mode);
-                        await Server.Kick(player, KickFormat.Replace("{mode}", world.Mode.ToString()));
+                        if (!world.ValidateAccount(player.AccountName))
+                        {
+                            Logger.Log("Player " + player + " is not allowed in world " + world.World + " because of " + world.Mode);
+                            await Server.Kick(player, KickFormat.Replace("{mode}", world.Mode.ToString()));
+                        }
                     }
+
                 }
             };
 

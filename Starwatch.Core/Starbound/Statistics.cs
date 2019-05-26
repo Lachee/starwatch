@@ -18,8 +18,12 @@ namespace Starwatch.Starbound
         public long CurrentBanTicket { get; set; }
         public int TotalAccounts { get; set; }
 
+        public string LastShutdownReason { get; set; }
+
         internal Statistics(Server server)
         {
+            LastShutdownReason = server.LastShutdownReason;
+
             Connections = server.Connections.Count;
             LastConnectionID = server.Connections.LastestPlayer?.Connection;
             StartTime = server.StartTime;

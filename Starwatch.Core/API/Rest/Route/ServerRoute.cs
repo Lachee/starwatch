@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Starwatch.API.Gateway;
+using Starwatch.API.Gateway.Event;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -27,7 +28,7 @@ namespace Starwatch.API.Rest.Route
         public ServerRoute() : base(null, null) { }
 
         public string GetRouteName() => "/server";
-        public void SetGateway(GatewayJsonConnection gateway)
+        public void SetGateway(EventConnection gateway)
         {
             this.Handler = gateway.API.RestHandler;
             this.Authentication = gateway.Authentication;

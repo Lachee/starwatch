@@ -19,6 +19,7 @@ namespace Starwatch.API.Rest.Route
         }
 
         public ChatRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+
         public override RestResponse OnPost(Query query, object payloadObject)
         {
             if (Starbound.Rcon == null)

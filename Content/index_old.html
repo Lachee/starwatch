@@ -10,7 +10,7 @@
 
         <script type = "text/javascript" src = "js/ByteStream.js" ></script>
         <script type = "text/javascript" src = "js/sbname.js" ></script>
-        <script type = "text/javascript" src = "js/starwatch.js" ></script>
+        <script type = "text/javascript" src = "js/StarwatchClient.js" ></script>
 
         <link rel="stylesheet" type="text/css" href="css/main.css">
         <title>Starwatch Gateway</title>
@@ -26,7 +26,7 @@
             <input type="text" id="broadcast" placeholder="say..."></input>
             <button id="broadcast_send" onclick="sendBroadcast();">Send</button>
             
-            <button class="right" id="restart" onclick="if(confirm('Are you sure you wish to restart?')) starwatch.restart();">Restart Server</button>
+            <button class="right" id="restart" onclick="if(confirm('Are you sure you wish to restart?')) starwatch.restartServer();">Restart Server</button>
             <button class="right" id="allowAnon" onclick="toggleAnon();">Allow Anon &#9898;</button>
         </div>
         
@@ -44,8 +44,7 @@
         </div>
         <div class="panel" id="right">
             <div class="stats">
-                    <canvas id="memChart" width="370" height="230" style='float:left'></canvas>
-                    <canvas id="playerChart" width="370" height="230" style='float:right'></canvas>
+                    <canvas id="myChart" width="800" height="460"></canvas>
             </div>
             <div class="players">
                 <table class="playerlist" style="width:100%">
@@ -71,32 +70,27 @@
         var prependInstead = false; var autoscroll = false;
         var logCounter = 0; var connectAttempts = 0;
         var showChat = false, showInfo = false, showWarning = false, showError = false;
-        var allowAnonymousConnections = false;
-        var previousSettings = null;
 
-        var starwatch = new Starwatch(location.hostname, location.port ? location.port : 80, location.protocol == "https:");
-        starwatch.onPlayerJoin = pushPlayer;
-        starwatch.onPlayerLeave = popPlayer;
-        starwatch.onPlayerSync = syncPlayers;
-        starwatch.onPlayerUpdate = updatePlayer;  
-
+        var starwatch = new StarwatchClient(location.hostname, location.port ? location.port : 80, "", location.protocol == "https:");
+        starwatch.onPlayerConnected = pushPlayer;
+        starwatch.onPlayerDisconnected = popPlayer;
+        starwatch.onPlayersSync = syncPlayers;
+        starwatch.onPlayerUpdated = updatePlayer;  
         starwatch.onRateLimitReached = function(ratelimit) 
         {
             console.error(ratelimit);
             alert("RateLimited\nYour account has been ratelimted. Please wait " + (ratelimit.timeout / 1000) + "s before performing any actions!");
         }
-        starwatch.onEventConnected = function () 
-        { 
-            connectAttempts = 0; 
-            pushMessage("client", "client", "Connected to server..."); 
-            updateSettings();
-        }
-        starwatch.onEventDisconnected = function (code, reason) 
-        { 
-            //Clean up lose connections
-            starwatch.close();
+        starwatch.onSettingsUpdate = function(settings) 
+        {
+            let toggle = settings.allowAnonymousConnections ? " &#9745;" : " &#9744;";
+            $(".toolbar button#allowAnon").html("Allow Anon " + toggle);
+        } 
 
-            //Do the logging
+        starwatch.onConnect = function () { connectAttempts = 0; pushMessage("info", "client", "Connected to server..."); }
+        starwatch.onReady = function () { pushMessage("info", "client", "Connection ready."); }
+        starwatch.onClose = function (code, reason) 
+        { 
             pushMessage("erro", "client", "Connection to starwatch lost! " + reason); 
             if (code == 1008)
             {
@@ -123,41 +117,45 @@
                     location.reload();
             }
         }
-
-        starwatch.on("event", function(evt) 
+        starwatch.onLogMessage = function(msg) 
         {
-            pushMessage("client", "client", evt._event + " occured");
-        })
+            logCounter += 1;
+            var type = "";
+            var author = "";
+            switch(msg.Level) { 
+                default:
+                    type = "erro";
+                    author = "????";
+                break;
+                case STARWATCH_LOGLEVEL.Info:
+                    if (!showInfo) return;
+                    type = "info";
+                    author = "info";
+                break; 
+                case STARWATCH_LOGLEVEL.Warning:
+                    if (!showWarning) return;
+                    type = "warn";
+                    author = "warning";
+                break; 
+                case STARWATCH_LOGLEVEL.Error:
+                    if (!showError) return;
+                    type = "erro";
+                    author = "error";
+                break; 
+                case STARWATCH_LOGLEVEL.Chat:
+                    if (!showChat) return;
+                    type = "chat";
+                    author = escapeStarboundTags(msg.Author);
+                break;
+            }
 
-        starwatch.on("OnServerReload", function(msg) { updateSettings(); });
-        starwatch.on("OnServerStart", function(msg) { updateSettings(); });
-        starwatch.on("OnPlayerDisconnect", (p) => { });
+            pushMessage(type, author, msg.Content);
+        };
 
-        starwatch.on("OnChat", function(msg) {
-            console.log(msg);
-            pushMessage('chat', msg.Author, msg.Content, true);
-        });
-        starwatch.on("log", function(log) 
-        {
-            logCounter++;
-            if (log.startsWith("[Info]")) 
-            {
-                pushMessage('info', 'info', log.substring(7));
-            }
-            else if (log.startsWith("[Warning]")) 
-            {
-                pushMessage('warn', 'warning', log.substring(10));
-            }
-            else if (log.startsWith("[Error]"))
-            {
-                pushMessage('erro', 'error', log.substring(8));
-            }
-        });
-        
         function connect() 
         { 
             connectAttempts += 1;
-            pushMessage("client", "client", "Connecting (" + connectAttempts + ")..."); 
+            pushMessage("info", "client", "Connecting (" + connectAttempts + ")..."); 
             starwatch.connect(); 
         }
 
@@ -167,21 +165,19 @@
             let msg = $("input#broadcast").val();
             $("input#broadcast").val("");
             starwatch.broadcast(msg);
+
         }
-        
         function setAutoscroll(state) {            
             autoscroll = state;            
             $(".toolbar button#autoscroll").html("Autoscroll" + (state ? " &#9745;" : " &#9744;"));
-            pushMessage("client", "client", "Autoscroll is now " + (state ? "enabled" : "disabled"));
+            pushMessage("info", "client", "Autoscroll is now " + (state ? "enabled" : "disabled"));
         }
 
         function toggleAnon() 
         {  
-            let state = !allowAnonymousConnections;
+            let state = starwatch.settings.allowAnonymousConnections = !starwatch.settings.allowAnonymousConnections;
             $(".toolbar button#allowAnon").html("Working....");
-
-            //TODO: Implement this
-            starwatch.patchSettings({ allowAnonymousConnections: state}, true, function(res) { updateSettings(); }); 
+            starwatch.patchSettings({ allowAnonymousConnections: state}); 
         }
         function toggleAutoscroll() { setAutoscroll(!autoscroll); }
         function toggleFilter(tag) 
@@ -223,33 +219,22 @@
                 $("tr.log#"+tag).fadeOut();
             }
 
-            pushMessage("client", "client", label + " is now " + (isEnabled ? "enabled" : "disabled"));
+            pushMessage("info", "client", label + " is now " + (isEnabled ? "enabled" : "disabled"));
         }
         function clearMessage(tag) 
         {
             console.log("Removing " + tag);
             $("table.log tr#" + tag).fadeOut("normal", function() {  this.remove(); });
         }        
-        function pushMessage(tag, author, content, linkAuthor = false) 
+        function pushMessage(tag, author, content) 
         {
-         
             var entry = $('<tr>', { "class": "log", "id": tag });
-            var timeField = $('<td>', { "class": "time" });
-            var authorField = $('<td>', { "class": "author" });
-            var contentField = $('<td>', { "class": "content"});
+            var timeField = $('<td>', { "id": "time" });
+            var authorField = $('<td>', { "id": "author" });
+            var contentField = $('<td>', { "id": "content"});
             timeField.text(moment().format("LTS"));
-            authorField.text(escapeStarboundTags(author));
+            authorField.text(author);
             contentField.text(content);
-
-            if (linkAuthor)
-            {
-                var player = null;
-                if (starwatch.players.some(function(p) { player = p; return p.Username == author; }))
-                {
-                    authorField.attr("id", player.Connection);
-                }
-            }
-
             entry.append(timeField).append(authorField).append(contentField);
 
             //console.log("["+tag+"] " + author + ": " + content);
@@ -270,25 +255,11 @@
         function syncPlayers(players) 
         { 
             $("tr.player").remove();
-            for(var key in players)
-            {
-                if (key == null || players[key] == null) return;
-                pushPlayer(players[key]);
-            }
+            for (var i = 0; i < players.length; i++) pushPlayer(players[i]);
         }
-
-        function popPlayer(player) 
-        {             
-            //I dont know why, but apparently by the time i get to here, the ID query selector stops working.
-            // idk
-            $('tr.player').remove();
-            syncPlayers(starwatch.players);
-        }
-
+        function popPlayer(player) { $("tr.player#" + player.Connection).remove();  }
         function pushPlayer(player) 
         {
-            console.log("PUSH", player);
-            if (player == null) return;
             var entry = $('<tr>', { "class": "player context", "id": player.Connection });
             var connField = $('<td>', { "id": "connection" });
             var nameField = $('<td>', { "id": "name" });
@@ -308,7 +279,6 @@
             $("table.playerlist").append(entry);
 
             updatePlayer(player);
-            updatePlayerGraph();
         }
         function updatePlayer(player) 
         {
@@ -321,16 +291,6 @@
             else  $("tr.player#"+player.Connection+ " #ID").html(player.IP);
         }
             
-        function updateSettings() 
-        {
-            starwatch.fetchSettings(function(settings) {
-                previousSettings = settings;
-                allowAnonymousConnections = settings.allowAnonymousConnections;
-                let toggle = allowAnonymousConnections ? " &#9745;" : " &#9744;";
-                $(".toolbar button#allowAnon").html("Allow Anon " + toggle);
-                updatePlayerGraph();
-            });
-        }
 
         $(document).ready(function() {
             toggleAutoscroll();
@@ -342,94 +302,6 @@
         });
         </script>
        
-       <script>
-           let max_memory_mb = 16*1024*1024*1024;
-
-           let memctx = document.getElementById("memChart").getContext('2d');
-           let memchart = new Chart(memctx, {
-               type: 'pie',
-               data: {
-                   datasets: [ 
-                        { 
-                            data: [10, 20, 30],
-                            backgroundColor: [ "#F7464A", "#46BFBD", ], 
-                        }
-                    ],
-                   labels: ['Memory Usage', 'Peak Usage', 'Available' ]
-               },               
-                options: {
-                    responsive: false,
-                    maintainAspectRatio: false,
-                    tooltips: {
-                        mode: 'label',
-                        callbacks: {
-                            label: function (tooltipItems, data) { 
-                                var label = data.labels[tooltipItems.index];
-                                var amount = data.datasets[tooltipItems.datasetIndex].data[tooltipItems.index];
-                                return label + ": " + (amount / 1024 / 1024).toFixed(2) + " MB";
-                            }
-                        }
-                    },
-                }
-           })        
-           
-            let playerctx = document.getElementById("playerChart").getContext('2d');
-            let playerchart = new Chart(playerctx, {
-               type: 'pie',
-               data: {
-                   datasets: [ 
-                        { 
-                            data: [0, 0, 60],
-                            backgroundColor: [ "#46BFBD", "#F7464A", ], 
-                        }
-                    ],
-                   labels: ['Players', 'Admins', 'Free Slots' ]
-               },               
-                options: {
-                    responsive: false,
-                    maintainAspectRatio: false
-                }
-           })
-           
-            window.setInterval(fetchStatistics, 15 * 1000); fetchStatistics();
-            function fetchStatistics() 
-            {
-                starwatch.fetchStatistics(function(data) {
-                    let usage_mb = data.MemoryUsage; //(data.MemoryUsage / 1024.0 / 1024.0);
-                    let peak_mb = data.PeakUsage;
-
-                    memchart.data.datasets[0].data = [
-                        usage_mb,
-                        peak_mb - usage_mb,
-                        max_memory_mb - peak_mb - usage_mb
-                    ];
-
-                    memchart.update();
-                });
-            }
-
-            function updatePlayerGraph()
-            {
-
-                if (previousSettings != null) 
-                {
-                    let players = starwatch.players.filter((p) => p && !p.IsAdmin).length;
-                    let admins = starwatch.players.filter((p) => p && p.IsAdmin).length;
-                    let max = previousSettings.maxPlayers;
-                    playerchart.data.datasets[0].data = [
-                        players,
-                        admins,
-                        max - players - admins
-                    ];
-                }
-                   
-                playerchart.update();
-
-            }
-
-       </script>
-
-<!--
        <script>
         var ctx = document.getElementById("myChart").getContext('2d');
         var myChart = new Chart(ctx, {
@@ -477,7 +349,8 @@
         pushNewStatistics();
         function pushNewStatistics() 
         {
-            starwatch.fetchStatistics(function(data) {
+            starwatch.getStatistics(function(data) {
+                if (data.Status != 0) { console.error(data); return; }
 
                 let time = Date();
                 popData(0, 10);
@@ -485,7 +358,7 @@
                 //myChart.update(0);
 
                 pushData(0, time, logCounter);
-                pushData(1, time, data.Connections);
+                pushData(1, time, data.Response.Connections);
                 myChart.update(0);
 
                 logCounter = 0;
@@ -506,9 +379,7 @@
             });
         }
         </script>
--->
-
-
+        
         <script>
             $(".players").contextmenu({
                 delegate: ".context",
@@ -552,7 +423,6 @@
                                 { 
                                     let reason = $("#dialog-form textarea").val();
                                     let duration = $("#dialog-form input#timeout").val();
-                                    
                                     starwatch.players[id].timeout(reason, duration);
                                     dialog.dialog("close");
                                 },
@@ -571,7 +441,6 @@
                                 "Ban Account": function() 
                                 { 
                                     $("tr.player#" + id).addClass("strikeout");
-                                    
                                     starwatch.players[id].ban($("#dialog-form textarea").val());
                                     dialog.dialog("close");
                                 },
@@ -606,24 +475,3 @@
                     </div>
 
 -->
-
-<!--
-<script>
-
-    var sw = new Starwatch(location.hostname, (location.port ? location.port : 80), location.protocol == "https:")
-    sw.connect();
-    sw.onEventDisconnected = (reason) => sw.connect();
-    sw.onLogDisconnected = (reason) => sw.connect();
-
-    sw.onPlayerSync = function(players)
-    {
-        console.log("Player SYNC", players);
-    };
-
-    sw.onPlayerJoin = function(player)
-    {
-        console.log("Player JOIN", player, sw.players);
-    };
-    
-</script>
---->

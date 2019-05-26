@@ -16,6 +16,7 @@
 	--log-warn: var(--ansi-magenta);	
 	--log-err: var(--ansi-red);	
 	--log-chat: var(--ansi-yellow);
+	--log-client: var(--ansi-black);
     
     
     --toolbar-height: 25px;
@@ -87,8 +88,9 @@ tr.highlight  { border: 1px solid gold; }
 .log tr#warn { color: var(--log-warn); }
 .log tr#erro { color: var(--log-err); }
 .log tr#chat { color: var(--log-chat); }
+.log tr#client { color: var(--log-client); }
 
-.log td#author {
+.log td.author {
     text-align: right;
     border-right: 2px solid var(--ansi-black);
     border-radius: 4px;
@@ -96,10 +98,10 @@ tr.highlight  { border: 1px solid gold; }
     background: #ffffff05;
     width: 150px;
 }
-.log td#content {
+.log td.content {
     padding-left:  4px;
 }
-.log td#time {
+.log td.time {
     width: 85px;
     color: var(--log-time);
 }
@@ -107,7 +109,7 @@ tr.highlight  { border: 1px solid gold; }
 .stats
 {
     width: 100%;
-    height: 460px;
+    height: 250px;
     color: black;
 }
 

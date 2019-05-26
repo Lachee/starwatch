@@ -6,11 +6,13 @@ using Starwatch.Starbound;
 using Starwatch.API;
 using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Web;
+using Starwatch.API.Gateway.Event;
+using Starwatch.API.Gateway;
 
 namespace Starwatch.API.Rest.Route
 {
     [Route("/ban/:ticket", AuthLevel.Admin)]
-    class BanDetailsRoute : RestRoute
+    class BanDetailsRoute : RestRoute, IGatewayRoute
     {
         [Argument("ticket", Converter = typeof(BanConverter))]
         public Ban Ban { get; set; }
@@ -18,6 +20,17 @@ namespace Starwatch.API.Rest.Route
         public override Type PayloadType => typeof(Ban);
 
         public BanDetailsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+        public BanDetailsRoute(Ban ban) : base(null, null)
+        {
+            this.Ban = ban;
+        }
+
+        public string GetRouteName() => "/ban/:ticket";
+        public void SetGateway(EventConnection gateway)
+        {
+            Handler = gateway.API.RestHandler;
+            Authentication = gateway.Authentication;
+        }
 
         /// <summary>
         /// Gets a ban
@@ -41,6 +54,7 @@ namespace Starwatch.API.Rest.Route
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
             return new RestResponse(RestStatus.OK, res: task.Result);
         }
+
 
     }
 }
