@@ -28,7 +28,7 @@ namespace Starwatch.Starbound
         public int SampleMinDelay { get; set; } = 250;
         public int SampleMaxDelay { get; set; } = 250 * 10;
 
-        public string StorageDirectory => Path.Combine(WorkingDirectory, @"\..\storage");
+        public string StorageDirectory => Path.Combine(WorkingDirectory, "..", "storage");
         public string WorkingDirectory { get; }
         public string ExecutableName { get; }
         public string ConfigurationFile { get; }
