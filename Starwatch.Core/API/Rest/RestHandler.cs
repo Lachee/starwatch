@@ -169,7 +169,9 @@ namespace Starwatch.API.Rest
                 restAuthLevel = restAuthLevel ?? authentication.AuthLevel;
 
                 //Update the authentications update
-                Logger.Log("Authentication {0} requested {1}", authentication, url);
+                //Really dodgy hack, but I dont want my screen flooded with /statistics
+                if (!url.EndsWith("statistics"))
+                    Logger.Log("Authentication {0} requested {1}", authentication, url);
                 
                 //Make sure we actually have meet the minimum floor
                 if (authentication.AuthLevel < MinimumAuthentication)

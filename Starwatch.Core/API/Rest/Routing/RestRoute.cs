@@ -30,6 +30,11 @@ namespace Starwatch.API.Rest.Routing
         /// </summary>
         public virtual Type PayloadType => null;
 
+        /// <summary>
+        /// Is the endpoint silent and not log?
+        /// </summary>
+        public virtual bool Silent => false;
+
         public RestRoute() { }
         public RestRoute(RestHandler handler, Authentication authentication)
         {

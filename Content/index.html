@@ -79,6 +79,11 @@
         starwatch.onPlayerLeave = popPlayer;
         starwatch.onPlayerSync = syncPlayers;
         starwatch.onPlayerUpdate = updatePlayer;  
+		starwatch.onLogDisconnected = function(e) 
+		{ 
+            pushMessage("client", "client", "Disconnected from Log Server. Reconnecting..."); 
+			starwatch.connect();
+		}
 
         starwatch.onRateLimitReached = function(ratelimit) 
         {

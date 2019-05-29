@@ -32,7 +32,7 @@ namespace Starwatch.API.Web
             if (args.Request.Url.Segments[1] != ROOT_URL) return false;
 
             //Admin users only. Bots are forbidden.
-            if (!auth.IsAdmin)
+            if (!auth.IsAdmin || auth.IsBot)
             {
                 args.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                 args.Response.Close();
