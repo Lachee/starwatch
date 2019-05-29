@@ -298,6 +298,9 @@ namespace Starwatch.API
         /// <param name="reason"></param>
         public void DisconnectAuthentication(Authentication auth, WebSocketSharp.CloseStatusCode closeStatusCode = WebSocketSharp.CloseStatusCode.Normal, string reason = "Normal Termination")
         {
+            //Tell the logger
+            Logger.Log("Disconnecting {0} because of {1}", auth, reason);
+
             //Clear all the services
             var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
             foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as GatewayConnection))

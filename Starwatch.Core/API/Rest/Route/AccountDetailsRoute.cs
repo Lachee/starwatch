@@ -114,7 +114,7 @@ namespace Starwatch.API.Rest.Route
 
             //Terminate any connections
             var auth = this.Handler.ApiHandler.GetAuthentication(Account.Name);
-            this.Handler.ApiHandler.DisconnectAuthentication(auth);
+            this.Handler.ApiHandler.DisconnectAuthentication(auth, reason: "Authentication change");
 
             //Save the settings
             var task = Task.Run(async () =>
