@@ -289,7 +289,27 @@ namespace Starwatch.API
             //Clears all authentications, forcing them to be recached.
             _authentications.Clear();
         }
-        
+
+        /// <summary>
+        /// Disconnects an authentication from all websocket connections and authentication cache
+        /// </summary>
+        /// <param name="auth"></param>
+        /// <param name="closeStatusCode"></param>
+        /// <param name="reason"></param>
+        public void DisconnectAuthentication(Authentication auth, WebSocketSharp.CloseStatusCode closeStatusCode = WebSocketSharp.CloseStatusCode.Normal, string reason = "Normal Termination")
+        {
+            //Clear all the services
+            var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
+            foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as GatewayConnection))
+            {
+                if (con.Authentication == auth)
+                    con.Terminate(closeStatusCode, reason);
+            }
+
+            //Clear identification
+            _authentications.Remove(auth.Identity.Name);
+        }
+
         /// <summary>
         /// Gets a list of all authentications. Used soley for maintainence.
         /// </summary>
@@ -374,6 +394,7 @@ namespace Starwatch.API
             if (account != null) return new Authentication(account) { Identity = identity };
             return null;
         }
+
 
         /// <summary>
         /// Tries to get a bot account, loading the json data and scanning through all accounts.

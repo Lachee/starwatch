@@ -6,6 +6,8 @@ using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Web;
 using Starwatch.API.Gateway.Event;
 using Starwatch.API.Gateway;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -107,10 +109,25 @@ namespace Starwatch.API.Rest.Route
                 Account.Password = password;
                 Account.IsAdmin = isAdmin;
                 Starbound.Settings.Accounts.UpdateAccount(Account, password, isAdmin);
+
             }
 
+            //Terminate any connections
+            var auth = this.Handler.ApiHandler.GetAuthentication(Account.Name);
+            this.Handler.ApiHandler.DisconnectAuthentication(auth);
+
             //Save the settings
-            var task = Starbound.SaveSettings(true);
+            var task = Task.Run(async () =>
+            {
+                //Apply the settings
+                await Starbound.SaveSettings(true);
+                
+                //Logout anyone that previously connected
+                foreach (var player in Starbound.Connections.GetPlayersEnumerator().Where(p => p.AccountName.Equals(Account.Name)))
+                    await player.Kick("Account details changed.");
+            });
+
+            //If we are async, abort asap
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
 
             //Wait for the settings to finish saving, then return the new account
