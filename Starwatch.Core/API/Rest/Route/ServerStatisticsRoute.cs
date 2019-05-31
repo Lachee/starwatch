@@ -23,7 +23,7 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             var task = Handler.Starbound.GetStatisticsAsync();
-            task.RunSynchronously();
+            task.Wait();
             return new RestResponse(RestStatus.OK, res: task.Result);
         }
 
