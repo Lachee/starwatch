@@ -285,31 +285,47 @@ namespace Starwatch.Starbound
             return ticket;
         }
 
-        /// <summary>
-        /// Gets the memory usage.
-        /// </summary>
-        /// <returns></returns>
-        public long GetMemoryUsage()
-        {
-            //TODO: Use the semaphore for this.
-            return ProcessExists ? _process.WorkingSet64 : 0;
-        }       
-        
-        /// <summary>
-        /// Gets the peak usage.
-        /// </summary>
-        /// <returns></returns>
-        public long GetPeakMemoryUsage()
-        {
-            //TODO: Use the semaphore for this.
-            return ProcessExists ? _process.PeakWorkingSet64 : 0;
-        }
 
         /// <summary>
         /// Gets the current statistics of the server
         /// </summary>
         /// <returns></returns>
-        public Statistics GetStatistics() => new Statistics(this);
+        public async Task<Statistics> GetStatisticsAsync()
+        {
+            var usage = await GetMemoryUsageAsync();
+            return new Statistics(this, usage);
+        }
+
+
+        /// <summary>
+        /// Gets the current memory profile.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<MemoryUsage> GetMemoryUsageAsync()
+        {
+            await _processSemaphore.WaitAsync();
+            try
+            {
+                //Create a new memory usage profile.
+                if (_process == null) return new MemoryUsage();
+                return new MemoryUsage(_process);
+            }
+            finally
+            {
+                _processSemaphore.Release();
+            }
+        }
+
+        public struct MemoryUsage
+        {
+            public long WorkingSet, PeakWorkingSet, MaxWorkingSet;
+            public MemoryUsage(Process process)
+            {
+                WorkingSet = process.WorkingSet64;
+                PeakWorkingSet = process.PeakWorkingSet64;
+                MaxWorkingSet = process.MaxWorkingSet.ToInt64();
+            }
+        }
         #endregion
 
         #region Running / Termination

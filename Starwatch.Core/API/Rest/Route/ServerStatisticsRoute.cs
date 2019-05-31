@@ -22,8 +22,9 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnGet(Query query)
         {
-            var stats = Handler.Starbound.GetStatistics();
-            return new RestResponse(RestStatus.OK, res: stats);
+            var task = Handler.Starbound.GetStatisticsAsync();
+            task.RunSynchronously();
+            return new RestResponse(RestStatus.OK, res: task.Result);
         }
 
 

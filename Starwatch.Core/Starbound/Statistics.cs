@@ -1,4 +1,5 @@
 ﻿using System;
+using static Starwatch.Starbound.Server;
 
 namespace Starwatch.Starbound
 {
@@ -6,9 +7,7 @@ namespace Starwatch.Starbound
     {
         public int Connections { get; set; }
         public int? LastConnectionID { get; set; }
-        public long MemoryUsage { get; set; }
-        public long PeakUsage { get; set; }
-
+        public MemoryUsage MemoryUsage { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public double Uptime { get; set; }
@@ -18,7 +17,7 @@ namespace Starwatch.Starbound
 
         public string LastShutdownReason { get; set; }
 
-        internal Statistics(Server server)
+        internal Statistics(Server server, MemoryUsage usage)
         {
             LastShutdownReason = server.LastShutdownReason;
 
@@ -33,9 +32,7 @@ namespace Starwatch.Starbound
             Uptime = 0;
             if (EndTime > StartTime) { Uptime = -(DateTime.UtcNow - EndTime).TotalSeconds; }
             if (StartTime > EndTime) { Uptime = (DateTime.UtcNow - StartTime).TotalSeconds; }
-
-            MemoryUsage = server.GetMemoryUsage();
-            PeakUsage = server.GetPeakMemoryUsage();
+            MemoryUsage = usage;
         }
     }
 }

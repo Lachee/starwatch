@@ -348,8 +348,6 @@
         </script>
        
        <script>
-           let max_memory_mb = 32*1024*1024*1024;
-
            let memctx = document.getElementById("memChart").getContext('2d');
            let memchart = new Chart(memctx, {
                type: 'pie',
@@ -400,13 +398,14 @@
             function fetchStatistics() 
             {
                 starwatch.fetchStatistics(function(data) {
-                    let usage_mb = data.MemoryUsage; //(data.MemoryUsage / 1024.0 / 1024.0);
-                    let peak_mb = data.PeakUsage;
+                    let usage_b = data.MemoryUsage.WorkingSet; //(data.MemoryUsage / 1024.0 / 1024.0);
+                    let peak_b = data.MemoryUsage.PeakWorkingSet;
+                    let max_b = data.MemoryUsage.MaxWorkingSet;
 
                     memchart.data.datasets[0].data = [
-                        usage_mb,
-                        Math.max(0, peak_mb - usage_mb),
-                        max_memory_mb - peak_mb - usage_mb
+                        usage_b,
+                        Math.max(0, peak_b - usage_b),
+                        max_b - peak_b - usage_b
                     ];
 
                     memchart.update();
