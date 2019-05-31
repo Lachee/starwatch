@@ -400,7 +400,7 @@
                 starwatch.fetchStatistics(function(data) {
                     let usage_b = data.MemoryUsage.WorkingSet; //(data.MemoryUsage / 1024.0 / 1024.0);
                     let peak_b = data.MemoryUsage.PeakWorkingSet;
-                    let max_b = data.MemoryUsage.MaxWorkingSet;
+                    let max_b = 4 * 1024 * 1024 * 1024;
 
                     memchart.data.datasets[0].data = [
                         usage_b,
