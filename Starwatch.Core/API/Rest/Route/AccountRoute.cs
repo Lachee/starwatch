@@ -2,6 +2,7 @@
 using Starwatch.API.Rest.Routing;
 using Starwatch.API.Rest.Route.Entities;
 using Starwatch.API.Web;
+using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -34,17 +35,23 @@ namespace Starwatch.API.Rest.Route
             if (account.IsAdmin.GetValueOrDefault(false) && AuthenticationLevel < AuthLevel.SuperBot)
                 return new RestResponse(RestStatus.Forbidden, "Only SuperBot or above may create admin accounts.");
 
-            //Make sure the name isnt a duplicate
-            if (Starbound.Settings.Accounts.GetAccount(account.Name) != null)
-                return new RestResponse(RestStatus.BadRequest, $"The username {account.Name} already exists.");
-            
-            //Post it
-            Starbound.Settings.Accounts.AddAccount(account.ToAccount());
+            var task = Task.Run(async () =>
+            {
 
-            //Save the settings
-            var task = Starbound.SaveSettings(true);
+                //Make sure the name isnt a duplicate
+                if (await Starbound.Configurator.GetAccountAsync(account.Name) != null)
+                    return new RestResponse(RestStatus.BadRequest, $"The username {account.Name} already exists.");
+            
+                //Post it
+                await Starbound.Configurator.SetAccountAsync(account.ToAccount());
+
+                //Save the settings
+                await Starbound.SaveConfigurationAsync(true);
+                return new RestResponse(RestStatus.OK, msg: $"Saved: " + account.Name, res: account);
+            });
+
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return new RestResponse(RestStatus.OK, msg: $"Saved: {task.Result}", res: account);
+            return task.Result;
         }
     }
 }

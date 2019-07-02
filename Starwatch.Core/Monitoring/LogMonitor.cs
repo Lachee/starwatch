@@ -38,13 +38,18 @@ namespace Starwatch.Monitoring
             };
         }
 
-		public override Task<bool> HandleMessage(Message msg)
+		public override async Task<bool> HandleMessage(Message msg)
         {
             //return Task.FromResult(false);
             switch (msg.Level)
             {
                 case Message.LogLevel.Chat:
                     if (_logChat) Logger.Log("<{0}> {1}", msg.Author, msg.Content);
+
+                    //Save the chat log
+                    var cl = new ChatLog(msg);
+                    await cl.SaveAsync(Server.DbContext);
+
                     break;
 
                 case Message.LogLevel.Info:
@@ -60,7 +65,8 @@ namespace Starwatch.Monitoring
                     break;
 
             }
-			return Task.FromResult(false);
+
+            return false;
 		}
     }
 }

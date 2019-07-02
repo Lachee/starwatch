@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Starwatch.Database;
 using Starwatch.Entities;
 using Starwatch.Logging;
 using Starwatch.Starbound;
@@ -7,8 +8,9 @@ using Starwatch.Util;
 namespace Starwatch.Monitoring
 {
     public abstract class Monitor
-	{
-		public Server Server { get; }
+    {
+        public DbContext DbContext => Server.DbContext;
+        public Server Server { get; }
 		public Logger Logger { get; }
 		public string Name { get; }
 

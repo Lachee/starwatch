@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Starwatch.Starbound;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Starwatch.Entities
@@ -98,6 +99,26 @@ namespace Starwatch.Entities
                 };
             }
         }
+
+        /// <summary>
+        /// Gets the session linked to the chat message.
+        /// </summary>
+        /// <returns></returns>
+        public Session GetSession()
+        {
+            //Only chat messages have sessions
+            if (!IsChat)
+                return null;
+
+            //Get the player linked with the author name. If it doesnt exist, return null.
+            var player = Server.Connections.GetPlayersEnumerator().FirstOrDefault(p => p.Username.Equals(this.Author));
+            if (player == null) return null;
+            
+            //Get the session linked with the account name.
+            return Server.Connections.GetSession(player.Connection);
+        }
+
+        [System.Obsolete("Regex Based Parsing is now obsolete")]
         public static Message ParseRegex(Server server, string line)
         {
             var match = MESSAGE_REGEX.Match(line);
@@ -131,7 +152,6 @@ namespace Starwatch.Entities
                 Author = ischat ? match.Groups[3].Value : null,
             };
         }
-        
 	}
     
 }

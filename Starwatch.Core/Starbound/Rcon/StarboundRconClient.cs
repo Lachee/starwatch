@@ -15,12 +15,12 @@ namespace Starwatch.Starbound.Rcon
         public Server Server { get; }
         public Logger Logger { get; }
 
-        public StarboundRconClient(Server server) : base("127.0.0.1", server.Settings.RconServerPort, server.Settings.RconServerPassword)
+        public StarboundRconClient(Server server) : base("127.0.0.1", server.Configurator.RconServerPort, server.Configurator.RconServerPassword)
         {
             Server = server;
             Logger = new Logger("RCON", server.Logger);
 
-            Address = server.Settings.RconServerBind.Trim();
+            Address = server.Configurator.RconServerBind.Trim();
             if (string.IsNullOrWhiteSpace(Address) || Address.Equals("*") || Address.Equals("localhost")) Address = "127.0.0.1";
 
         }
@@ -128,7 +128,7 @@ namespace Starwatch.Starbound.Rcon
             //No accounts listed
             if (!rcon.Message.Contains(":")) return new ListedPlayer[0];
 
-            //Split it from newlines. Lazy hack to get regex working
+            //Split it from newlines. 
             string[] lines = rcon.Message.Split('\n');
             ListedPlayer[] players = new ListedPlayer[lines.Length];
 
@@ -141,7 +141,8 @@ namespace Starwatch.Starbound.Rcon
                     continue;
                 }
 
-                int lastBreak = lines[i].Length - 35;   //Working from the end, we know the UUID will always be 32, so we can calculate where it will be
+                //Working from the end, we know the UUID will always be 32, so we can calculate where it will be
+                int lastBreak = lines[i].Length - 35;  
 
                 //Create the player object by splitting up the components. Regex is for cowards.
                 players[i] = new ListedPlayer()

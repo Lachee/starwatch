@@ -26,7 +26,7 @@ namespace Starwatch.Monitoring
             _checkTimer.Elapsed += async (sender, evnt) =>
             {
                 //Skip null settings
-                if (Server.Settings == null)
+                if (Server.Configurator == null)
                     return;
 
                 //Skip the server that isnt running
@@ -34,7 +34,7 @@ namespace Starwatch.Monitoring
                     return;
 
                 //Make sure we are runnign the query server
-                if (!Server.Settings.RunQueryServer)
+                if (Server.Configurator.QueryServerPort == 0)
                 {
                     Logger.LogWarning("Cannot run UDP checks because the server has disabled its query server.");
                     _checkTimer.Enabled = false;
@@ -42,11 +42,11 @@ namespace Starwatch.Monitoring
                 }
 
                 //Prepare the address 
-                string address = Server.Settings.QueryServerBind.Trim();
+                string address = Server.Configurator.QueryServerBind.Trim();
                 if (string.IsNullOrWhiteSpace(address) || address.Equals("*") || address.Equals("localhost")) address = "127.0.0.1";
 
                 //Check the UDP with the given address and port.
-                if (!await CheckServerUDP(address, Server.Settings.QueryServerPort))
+                if (!await CheckServerUDP(address, Server.Configurator.QueryServerPort))
                 {
                     Logger.Log("Server requires UDP restart!");
                     Server.ApiHandler.BroadcastRoute(new API.Rest.Route.ServerStatisticsRoute(), "OnUdpCrash");

@@ -48,7 +48,7 @@ namespace Starwatch.Extensions.Backup
         [JsonIgnore]
         private Logger Logger { get; set; }
 
-        private int[] _backupIntervals = new int[] { 10, 30, 1 * 60, 5 * 60, 20 * 60 };
+        private int[] _backupIntervals = new int[] { 10, 30, 60, 300, 1200 };
         private List<RollingBackup> _rollingBackups = null;
         private DateTime _lastRollingBackup;
 

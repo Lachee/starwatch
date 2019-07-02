@@ -38,20 +38,23 @@ namespace Starwatch.API.Rest.Route
 
             //Prepare values
             Payload payload = (Payload)payloadObject;
-            Settings settings = Handler.Starbound.Settings;
             bool reload = query.GetBool("reload", true);
             bool async = query.GetBool(Query.AsyncKey, false);
 
-            if (payload.AllowAnonymousConnections.HasValue) settings.AllowAnonymousConnections    = payload.AllowAnonymousConnections.Value;
-            if (payload.AllowAssetsMismatch.HasValue)       settings.AllowAssetsMismatch          = payload.AllowAssetsMismatch.Value;
-            if (payload.MaxPlayers.HasValue)                settings.MaxPlayers                   = payload.MaxPlayers.Value;
-            if (payload.ServerName != null)                 settings.ServerName                   = payload.ServerName;
+            if (payload.AllowAnonymousConnections.HasValue) Handler.Starbound.Configurator.AllowAnonymousConnections = payload.AllowAnonymousConnections.Value;
+            if (payload.AllowAssetsMismatch.HasValue) Handler.Starbound.Configurator.AllowAssetsMismatch = payload.AllowAssetsMismatch.Value;
+            if (payload.MaxPlayers.HasValue) Handler.Starbound.Configurator.MaxPlayers = payload.MaxPlayers.Value;
+            if (payload.ServerName != null) Handler.Starbound.Configurator.ServerName = payload.ServerName;
 
-            //Save the settings
-            var task = Handler.Starbound.SaveSettings(settings, reload);
-            if (async) return RestResponse.Async;
-            
-            return new RestResponse(RestStatus.OK, res: task.Result ? GetCulledServerSettings() : null);
+            //Save the settings and reload
+            if (reload)
+            { 
+                var task = Handler.Starbound.SaveConfigurationAsync(true);
+                if (async) return RestResponse.Async;
+                return new RestResponse(RestStatus.OK, res: task.Result ? GetCulledServerSettings(false) : null);
+            }
+
+            return new RestResponse(RestStatus.OK, res: GetCulledServerSettings());
         }
 
         public override RestResponse OnGet(Query query)
@@ -68,7 +71,7 @@ namespace Starwatch.API.Rest.Route
 
             //Delete the server and wait for it.
             bool async = query.GetBool(Query.AsyncKey, false);
-            var task = Handler.Starbound.Terminate();
+            var task = Handler.Starbound.Terminate(query.GetString("reason", "REST Shutdown by " + Authentication.Identity));
             if (async) return RestResponse.Async;
 
             //Wait for the termination and continue
@@ -77,62 +80,35 @@ namespace Starwatch.API.Rest.Route
         }
 
 
-        public JObject GetCulledServerSettings()
+        public JObject GetCulledServerSettings(bool requireSave = true)
         {
-            JObject settings = JObject.FromObject(Handler.Starbound.Settings);
-            if (AuthenticationLevel < AuthLevel.SuperUser)
-            {
-                settings.Remove("serverUsers");
-
-                settings.Remove("bannedIPs");
-                settings.Remove("bannedUuids");
-
-                settings.Remove("rconServerBind");
-                settings.Remove("rconServerPort");
-                settings.Remove("rconServerPassword");
-                settings.Remove("rconServerTimeout");
-                settings.Remove("runRconServer");
-            }
-
-            if (AuthenticationLevel < AuthLevel.SuperBot)
-            {
-                settings.Remove("safeScripts");
-                settings.Remove("scriptInstructionLimit");
-                settings.Remove("scriptInstructionMeasureInterval");
-                settings.Remove("scriptProfilingEnabled");
-                settings.Remove("scriptRecursionLimit");
-
-                settings.Remove("serverFidelity");
-                settings.Remove("serverOverrideAssetsDigest");
-
-                settings.Remove("clientP2PJoinable");
-                settings.Remove("clientIPJoinable");
-                settings.Remove("clearUniverseFiles");
-                settings.Remove("clearPlayerFiles");
-                settings.Remove("checkAssetsDigest");
-
-                settings.Remove("bannedTicket");
-            }
-
-            if (AuthenticationLevel < AuthLevel.Bot)
-            {
-
-            }
 
             if (AuthenticationLevel < AuthLevel.Admin)
             {
-                settings.Remove("queryServerBind");
-                settings.Remove("queryServerPort");
-                settings.Remove("runQueryServer");
-
-                settings.Remove("anonymousConnectionsAreAdmin");
-                settings.Remove("allowAssetsMismatch");
-                settings.Remove("allowAnonymousConnections");
-                settings.Remove("allowAdminCommandsFromAnyone");
-                settings.Remove("allowAdminCommands");
+                //Less than admin, return null;
+                return new JObject();
             }
+            else if (AuthenticationLevel <= AuthLevel.Bot)
+            {
+                //Admin, return the basics
+                return JObject.FromObject(Handler.Starbound.Configurator);
+            }
+            else
+            {
+                //Save the configuration first, just in case
+                if (requireSave)
+                    Handler.Starbound.Configurator.SaveAsync(false).Wait();
 
-            return settings;
+                //Export the settings
+                var settings = Handler.Starbound.Configurator.ExportSettingsAsync().Result;
+
+                //Remove the user and bans.
+                var jobj = JObject.FromObject(settings);
+                jobj.Remove("serverUsers");
+                jobj.Remove("bannedIPs");
+                jobj.Remove("bannedUuids");
+                return jobj;
+            }
         }
     }
 }

@@ -16,148 +16,75 @@ namespace Starwatch.Extensions.Whitelist
 ^blue;If you would like access, please make a request at
 ^pink;https://iLoveBacons.com/requests/");
 
+
+        [System.Obsolete]
         private Dictionary<string, ProtectedWorld> _protectedWorlds = new Dictionary<string, ProtectedWorld>();
-        public WhitelistManager(Server server) : base(server, "Whitelist")
-        {
-        }
+
+        public WhitelistManager(Server server) : base(server, "Whitelist") { }
 
         public override Task Initialize()
         {
-            //Load the config
-            _protectedWorlds = Configuration.GetObject(CONFIG_WORLDS_KEY, new Dictionary<string, ProtectedWorld>());
-
             //Sub to the teleport events
-            Server.Connections.OnPlayerUpdate += async (player) =>
-            {
-                if (player.Location != null)
-                {
-                    ProtectedWorld world;
-                    if (_protectedWorlds.TryGetValue(player.Location.Whereami, out world))
-                    {
-                        if (!world.ValidateAccount(player.AccountName))
-                        {
-                            Logger.Log("Player " + player + " is not allowed in world " + world.World + " because of " + world.Mode);
-                            await Server.Kick(player, KickFormat.Replace("{mode}", world.Mode.ToString()));
-                        }
-                    }
-
-                }
-            };
+            Server.Connections.OnPlayerUpdate += OnPlayerUpdate;
 
             //Return done
             return Task.CompletedTask;
         }
+
+        private async void OnPlayerUpdate(Player player)
+        {
+            if (player.Location == null) return;
+
+            //Load the protected world
+            ProtectedWorld pw = await GetProtectionAsync(player.Location);
+            if (pw != null && await pw.CheckPermissionAsync(player))
+            {
+                Logger.Log("Player {0} is not allowed in world {1} because of {2}", player, pw.World, pw.Mode);
+                await Server.Kick(player, KickFormat.Replace("{mode}", pw.Mode.ToString()));
+            }
+        }
         
         /// <summary>
-        /// Adds a world to be protected
+        /// Gets a protection
         /// </summary>
-        /// <param name="world"></param>
+        /// <param name="whereami"></param>
+        /// <returns></returns>
+        public async Task<ProtectedWorld> GetProtectionAsync(World world)
+        {
+            ProtectedWorld pw = new ProtectedWorld(this, world);
+            if (!await pw.LoadAsync(Server.DbContext)) return null;
+            return pw;
+        }
+
+        /// <summary>
+        /// Sets or Creates a world protection
+        /// </summary>
+        /// <param name="whereami"></param>
         /// <param name="mode"></param>
         /// <param name="allowAnonymous"></param>
         /// <returns></returns>
-        public bool AddWorld(World world, WhitelistMode mode, bool allowAnonymous = false, string name = null)
+        public async Task<ProtectedWorld> SetProtectionAsync(World world, WhitelistMode mode, bool allowAnonymous)
         {
-            if (_protectedWorlds.ContainsKey(world.Whereami)) return false;
-            _protectedWorlds.Add(world.Whereami, new ProtectedWorld(world, mode, allowAnonymous, name));
-            Configuration.SetKey(CONFIG_WORLDS_KEY, _protectedWorlds, save: true);
-            return true;
-        }
+            var protection = await GetProtectionAsync(world);
+            if (protection == null) protection = new ProtectedWorld(this, world);
 
-        /// <summary>
-        /// Removes a world from protection
-        /// </summary>
-        /// <param name="world"></param>
-        /// <returns></returns>
-        public bool RemoveWorld(World world)
-        {
-            bool success = _protectedWorlds.Remove(world.Whereami);
-            Configuration.SetKey(CONFIG_WORLDS_KEY, _protectedWorlds, save: success);
-            return success;
-        }
+            protection.Mode = mode;
+            protection.AllowAnonymous = allowAnonymous;
+            await protection.SaveAsync(DbContext);
 
-        /// <summary>
-        /// Gets the worlds protection. Returns null if it does not exist.
-        /// </summary>
-        /// <param name="world"></param>
-        /// <returns></returns>
-        public ProtectedWorld GetWorld(World world)
-        {
-            ProtectedWorld value;
-            if (_protectedWorlds.TryGetValue(world.Whereami, out value)) return value;
-            return null;
-        }
-
-        public IEnumerable<ProtectedWorld> GetWorlds() => _protectedWorlds.Values;
-        public IEnumerable<ProtectedWorld> GetWorlds(Account account) => _protectedWorlds.Values.Where(w => w.HasAccount(account.Name));
-
-        /// <summary>
-        /// Adds an account to the protected world.
-        /// </summary>
-        /// <param name="world"></param>
-        /// <param name="account"></param>
-        /// <returns></returns>
-        public bool AddAccount(World world, Account account) => AddAccount(GetWorld(world), account);
-        public bool AddAccount(ProtectedWorld world, Account account) 
-        {
-
-            if (world == null || account == null) return false;
-            if (world.AccountList.Add(account.Name))
-            {
-                Save();
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Adds a list of accounts to the protected account. Returns the number of accounts added
-        /// </summary>
-        /// <param name="world"></param>
-        /// <param name="account"></param>
-        /// <returns></returns>
-        public int AddAccounts(World world, HashSet<string> accounts) => AddAccounts(GetWorld(world), accounts);
-        public int AddAccounts(ProtectedWorld world, HashSet<string> accounts)
-        {
-            if (world == null || accounts == null) return 0;
-
-            //Add the accounts and tally the results
-            int count = 0;
-            foreach(var acc in accounts)
-                if (world.AccountList.Add(acc)) count++;
-
-            //The count is more than 0, so save it
-            if (count > 0) Save();
-            return count;
-        }
-
-
-        /// <summary>
-        /// Removes an account from the protected world
-        /// </summary>
-        /// <param name="world"></param>
-        /// <param name="account"></param>
-        /// <returns></returns>  
-        public bool RemoveAccount(World world, Account account) => RemoveAccount(GetWorld(world), account);
-        public bool RemoveAccount(ProtectedWorld world, Account account)
-        {
-            if (world == null || account == null) return false;
-            if (world.AccountList.Remove(account.Name))
-            {
-                Save();
-                return true;
-            }
-
-            return false;
+            return protection;
         }
         
-
         /// <summary>
-        /// Saves the configuration settings
+        /// Removes a world protection
         /// </summary>
-        public void Save()
+        /// <param name="world"></param>
+        /// <returns></returns>
+        public async Task<bool> RemoveProtectionAsync(ProtectedWorld world)
         {
-            Configuration.SetKey(CONFIG_WORLDS_KEY, _protectedWorlds, save: true);
+            return await world.DeleteAsync();
         }
+        
+        
     }
 }

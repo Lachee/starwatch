@@ -20,9 +20,12 @@ namespace Starwatch.API.Rest.Route.Entities
         {
             Name = pw.Name;
             Whereami = pw.World.Whereami;
-            AccountList = pw.AccountList;
+
             AllowAnonymous = pw.AllowAnonymous;
             Mode = pw.Mode;
+
+            //TODO: Fix the account listing
+            AccountList = null;
         }
     }
 }

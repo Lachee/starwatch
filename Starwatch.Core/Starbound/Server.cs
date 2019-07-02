@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Starwatch.Database;
 using Starwatch.Entities;
 using Starwatch.Logging;
 using Starwatch.Monitoring;
@@ -21,7 +22,10 @@ namespace Starwatch.Starbound
     */
     public class Server : IDisposable
     {
+        public int Id => 1;
+
         public StarboundHandler Starwatch { get; private set; }
+        public DbContext DbContext => Starwatch.DbContext;
         public Logger Logger { get; private set; }
 
         public string SamplePath { get; set; }
@@ -39,10 +43,10 @@ namespace Starwatch.Starbound
         public Connections Connections { get; private set; }
 
         /// <summary>
-        /// The settings for the server
+        /// The configuration factory for the server
         /// </summary>
-        public Settings Settings { get; private set; }
-
+        public Configurator Configurator { get; private set; }
+        
         /// <summary>
         /// The configuration for the server
         /// </summary>
@@ -105,6 +109,8 @@ namespace Starwatch.Starbound
             Starwatch = starwatch;
             Logger = new Logger("SERV", starwatch.Logger);
 
+            Configurator = new Configurator(this, this.Logger.Child("CNF"));
+
         }
 
         /// <summary>
@@ -156,8 +162,26 @@ namespace Starwatch.Starbound
         public Monitor[] GetMonitors(string fullname) => _monitors.Where(m => m.GetType().FullName.Equals(fullname)).ToArray();
         public T[] GetMonitors<T>() where T : Monitor => _monitors.Where(m => m.GetType().IsAssignableFrom(typeof(T))).Select(m => (T)m).ToArray();
 
+        /// <summary>
+        /// Tries to get the first instance of a monitor.
+        /// </summary>
+        /// <param name="server"></param>
+        /// <param name="monitor"></param>
+        /// <returns></returns>
+        public bool TryGetMonitor<T>(out T monitor) where T : Monitor
+        {
+            var monitors = GetMonitors<T>();
+            if (monitors.Length == 0)
+            {
+                monitor = null;
+                return false;
+            }
+
+            monitor = monitors[0];
+            return true;
+        }
         #region Helpers
-        
+
         public delegate void OnBanEvent(object sender, Ban ban);
         public delegate void OnKickEvent(object sender, int connection, string reason, int duration);
         public event OnBanEvent OnBan;
@@ -258,29 +282,14 @@ namespace Starwatch.Starbound
             Logger.Log("Adding ban: " + ban);
 
             //Add the ban, storing the tocket and saving the settings
-            long ticket = Settings.AddBan(ban);
-            if (!await SaveSettings())
-            {
-                Logger.LogError("Failed to save the settings for banning!");
-                return -1;
-            }
+            long ticket = await Configurator.AddBanAsync(ban);
 
             //Invoke the on ban
             OnBan?.Invoke(this, ban);
 
-            //Reload the server
+            //Reload the server, saving the configuration before we do.
             if (reload)
-            {
-                if (Rcon == null)
-                {
-                    Logger.LogWarning("Cannot reload after a ban because the rcon is disabled");
-                }
-                else
-                {
-                    Logger.Log("Reloading after ban");
-                    await Rcon.ReloadServerAsync();
-                }
-            }
+                await SaveConfigurationAsync(true);
 
             return ticket;
         }
@@ -295,7 +304,6 @@ namespace Starwatch.Starbound
             var usage = await GetMemoryUsageAsync();
             return new Statistics(this, usage);
         }
-
 
         /// <summary>
         /// Gets the current memory profile.
@@ -349,10 +357,12 @@ namespace Starwatch.Starbound
         }
 
         private async Task Kill()
-        { 
+        {
+            Logger.Log("Killing the server, waiting for our turn at the semaphore...");
             await _processSemaphore.WaitAsync();
             try
             {
+                Logger.Log("Killing the server, it is our turn!");
                 if (_process == null)
                     return;
 
@@ -381,16 +391,18 @@ namespace Starwatch.Starbound
                 Logger.Log("Process Disposed.");
                 EndTime = DateTime.UtcNow;
 
-                Logger.Log("Waiting some time as leadup...");
+                Logger.Log("Waiting some time for saftey...");
                 await Task.Delay(2500);
             }
             finally
             {
+                Logger.Log("Done, finished killing the server.");
                 _processSemaphore.Release();
             }
 
             //save the settings
-            await SaveSettings();
+            //We have no need to save the configuration now, it is generated on startup.
+            //await SaveConfigurationAsync(false);
         }
 
         /// <summary>
@@ -414,17 +426,18 @@ namespace Starwatch.Starbound
                 return;
             }
 
-            //Make sure config exists
-            if (!File.Exists(ConfigurationFile))
+            //Load the settings
+            Logger.Log("Loading Settings...");
+
+            //Make sure the configuration is valid
+            if (!await Configurator.TryLoadAsync())
             {
-                Logger.LogError("Cannot start server as the configuration '{0}' does not exist", ConfigurationFile);
+                Logger.LogError("Cannot start server as the configuration is invalid, but '{0}' does not exist", ConfigurationFile);
                 return;
             }
 
-            //Load the settings
-            Logger.Log("Loading Settings...");
-            string settingContents = File.ReadAllText(ConfigurationFile);
-            Settings = JsonConvert.DeserializeObject<Settings>(settingContents, new Serializer.UserAccountsSerializer());
+            //string settingContents = File.ReadAllText(ConfigurationFile);
+            //Settings = JsonConvert.DeserializeObject<Settings>(settingContents, new Serializer.UserAccountsSerializer());
 
             //Update the start time statistics.
             StartTime = DateTime.UtcNow;
@@ -445,7 +458,7 @@ namespace Starwatch.Starbound
 
             //Saving the settings
             Logger.Log("Saving Settings before launch...");
-            await SaveSettings();
+            await SaveConfigurationAsync();
 
             if (string.IsNullOrEmpty(SamplePath))
             {
@@ -490,7 +503,7 @@ namespace Starwatch.Starbound
                 if (success)
                 {
                     //Try and initialize the rcon.
-                    if (Settings.RunRconServer)
+                    if (Configurator.RconServerPort > 0)
                     {
                         Rcon = new Rcon.StarboundRconClient(this);
                         OnRconClientCreated?.Invoke(this, Rcon);
@@ -532,7 +545,6 @@ namespace Starwatch.Starbound
                         }
                     };
 
-                    
                     //Do the cancel
                     try { await Task.Delay(-1, _processAbortTokenSource.Token); } catch (TaskCanceledException) { }
 
@@ -663,7 +675,45 @@ namespace Starwatch.Starbound
         /// </summary>
         /// <param name="reload">Should RCON Reload be executed on success?</param>
         /// <returns>True if saved succesfully.</returns>
-        public async Task<bool> SaveSettings(bool reload = false) => await SaveSettings(Settings, reload);
+        public async Task<bool> SaveConfigurationAsync(bool reload = false)
+        {
+            Logger.Log("Writing configuration to file.");
+            try
+            { 
+
+                //Export the settings and then serialize it
+                Settings settings = await Configurator.ExportSettingsAsync();
+                if (settings == null) return false;
+
+                string json = JsonConvert.SerializeObject(settings, Formatting.Indented, new Serializer.UserAccountsSerializer());
+
+                //Write all the text
+                File.WriteAllText(ConfigurationFile, json);
+
+                //Reload it
+                if (reload)
+                {
+                    Debug.Assert(Rcon != null);
+                    if (Rcon == null)
+                    {
+                        Logger.LogWarning("Cannot reload save because rcon does not exist.");
+                    }
+                    else
+                    {
+                        Logger.Log("Reloading the settings...");
+                        await Rcon.ReloadServerAsync();
+                    }
+                }
+
+                Logger.Log("Settings successfully saved.");
+                return true;
+            }
+            catch(Exception e)
+            {
+                Logger.LogError(e, "Exception Occured while saving: {0}");
+                return false;
+            }
+        }
 
         /// <summary>
         /// Sets and saves the starbound setting, making a backup of the previous one first.
@@ -671,23 +721,14 @@ namespace Starwatch.Starbound
         /// <param name="settings">The settings to save.</param>
         /// <param name="reload">Should RCON Reload be executed on success?</param>
         /// <returns>True if saved succesfully.</returns>
+        [Obsolete("Do not directly save the settings", true)]
         public async Task<bool> SaveSettings(Settings settings, bool reload = false)
         {
             try
             {
-                //Set the settings
-                this.Settings = settings;
-
                 //Serialize it.
                 Logger.Log("Serializing Settings...");
-                string json = await Task.Run<string>(() => JsonConvert.SerializeObject(Settings, Formatting.Indented, new Serializer.UserAccountsSerializer()));
-
-                //Backup the previous one
-                if (File.Exists(ConfigurationFile))
-                {
-                    Logger.Log("Backing up previous...");
-                    File.Copy(ConfigurationFile, ConfigurationFile + "." + DateTime.UtcNow.ToShortDateString().Replace('/', '-') + ".bak", true);
-                }
+                string json = await Task.Run<string>(() => JsonConvert.SerializeObject(settings, Formatting.Indented, new Serializer.UserAccountsSerializer()));
 
                 //Save it
                 Logger.Log("Writing Settings...");

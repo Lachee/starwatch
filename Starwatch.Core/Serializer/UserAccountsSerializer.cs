@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Starwatch.Entities;
 using System;
+using System.Collections.Generic;
 
 namespace Starwatch.Serializer
 {
@@ -37,11 +38,26 @@ namespace Starwatch.Serializer
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            //Create the new account list and set its values.
+            AccountList acclist = new AccountList();
+            acclist.SetAccounts(ReadAccountEnumerator(reader));
+            return acclist;
+        }
 
-            //CReate a new user object
-            AccountList userAccounts = new AccountList();
+        public override bool CanRead {  get { return true; } }
 
-            //Begin the read
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(AccountList);
+        }
+
+        /// <summary>
+        /// Enumerates over the reader and creates new accounts. Finishes at the end of the object.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        private IEnumerable<Account> ReadAccountEnumerator(JsonReader reader)
+        {
             do
             {
                 if (reader.TokenType == JsonToken.PropertyName)
@@ -68,20 +84,10 @@ namespace Starwatch.Serializer
                     }
 
                     //add the account
-                    userAccounts.AddAccount(account, true);
+                    yield return account;
                 }
 
             } while (reader.Read() && reader.TokenType != JsonToken.EndObject);
-
-            userAccounts.UnmarkDirty();
-            return userAccounts;
-        }
-
-        public override bool CanRead {  get { return true; } }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(AccountList);
         }
     }
 }

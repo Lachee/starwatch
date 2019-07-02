@@ -15,10 +15,15 @@ namespace Starwatch.Entities
         public string AccountName { get; internal set; }
         public string UUID { get; internal set; }
         public string IP { get; internal set; }
-        public bool IsAdmin { get { return (Server?.Settings?.Accounts.GetAccount(AccountName)?.IsAdmin).GetValueOrDefault(false); } }
+        public bool IsAnonymous => string.IsNullOrWhiteSpace(AccountName) || AccountName.Equals(Account.Annonymous);
 
-        [JsonIgnore] public World Location { get; internal set; }
-        [JsonProperty("Location")] private string LocationSerialize { get => Location?.Whereami; set { Location = World.Parse(value); } }
+        //public bool IsAdmin { get { return (Server?.Settings?.Accounts.GetAccount(AccountName)?.IsAdmin).GetValueOrDefault(false); } }
+
+        [JsonIgnore]
+        public World Location { get; private set; }
+
+        [JsonProperty("Location")]
+        public string Whereami { get => Location?.Whereami; set { Location = World.Parse(value); } }
 
         public Player(Server server, int cid)
         {
@@ -46,7 +51,18 @@ namespace Starwatch.Entities
         /// Gets the account linked to this player.
         /// </summary>
         /// <returns></returns>
-        public Account GetAccount() => Server.Settings.Accounts.GetAccount(this.AccountName);
+        public async Task<Account> GetAccountAsync()
+        {
+            if (string.IsNullOrEmpty(AccountName)) return null;
+            return await Server.Configurator.GetAccountAsync(AccountName);
+        }
+
+        /// <summary>
+        /// Checks if the player is still connected
+        /// </summary>
+        /// <returns></returns>
+        public bool IsConnected() => Server.Connections.IsConnected(this);
+
         
     }
 }

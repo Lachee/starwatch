@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Starwatch.Entities;
+using System;
 using static Starwatch.Starbound.Server;
 
 namespace Starwatch.Starbound
@@ -12,7 +13,6 @@ namespace Starwatch.Starbound
         public DateTime EndTime { get; set; }
         public double Uptime { get; set; }
 
-        public long CurrentBanTicket { get; set; }
         public int TotalAccounts { get; set; }
 
         public string LastShutdownReason { get; set; }
@@ -25,9 +25,8 @@ namespace Starwatch.Starbound
             LastConnectionID = server.Connections.LastestPlayer?.Connection;
             StartTime = server.StartTime;
             EndTime = server.EndTime;
-
-            TotalAccounts = server.Settings.Accounts.Accounts.Count;
-            CurrentBanTicket = server.Settings.CurrentBanTicket;
+            
+            TotalAccounts = Account.LoadAllActiveAsync(server.DbContext).Result.Count;
 
             Uptime = 0;
             if (EndTime > StartTime) { Uptime = -(DateTime.UtcNow - EndTime).TotalSeconds; }

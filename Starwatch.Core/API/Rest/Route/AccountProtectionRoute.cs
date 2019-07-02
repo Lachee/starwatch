@@ -26,8 +26,11 @@ namespace Starwatch.API.Rest.Route
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             //Get the protection and trim the list so it doesnt include the complete account list
-            var worlds = manager.GetWorlds(Account).Select(w => new OptionalProtectedWorld(w) { AllowAnonymous = null, AccountList = null });
-            return new RestResponse(RestStatus.OK, res: worlds.ToArray());
+
+            //TODO: Reimplement This.
+            throw new System.NotImplementedException();
+            //var worlds = manager.GetWorlds(Account).Select(w => new OptionalProtectedWorld(w) { AllowAnonymous = null, AccountList = null });
+            //return new RestResponse(RestStatus.OK, res: worlds.ToArray());
         }
         
        

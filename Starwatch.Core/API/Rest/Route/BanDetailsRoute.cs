@@ -43,11 +43,11 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnDelete(Query query)
         {
             //Failed to remove the ban
-            if (!Starbound.Settings.RemoveBan(Ban))
+            if (!Starbound.Configurator.ExpireBanAsync(Ban).Result)
                 return new RestResponse(RestStatus.OK, res: false);
 
             //Save the settings and reload
-            var task = Starbound.SaveSettings(true);
+            var task = Starbound.SaveConfigurationAsync(true);
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
             return new RestResponse(RestStatus.OK, res: task.Result);
         }

@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script will convert letsencrypt certificates into pfx form
 
 if [ "$#" -ne 2 ]; then
   echo "Usage: sudo $0 <DOMAIN> <OUTPUT>" >&2

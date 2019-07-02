@@ -93,7 +93,7 @@ namespace Starwatch.API.Web
             Query query = new Query(nvk);
 
             //Validate the body
-            string grantType, redirectURL, code;
+            string grantType, code;
 
             //============ Validate the code
             if (!query.TryGetString("code", out code))

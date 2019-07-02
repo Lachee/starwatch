@@ -154,7 +154,6 @@ namespace Starwatch.API.Gateway
 
             public EventResponse(object response) : base(RestStatus.OK, res: response)
             {
-                Console.WriteLine("OBJ");
             }
 
             public EventResponse(Rest.RestResponse restResponse) 

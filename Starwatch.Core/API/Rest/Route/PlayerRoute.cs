@@ -31,7 +31,8 @@ namespace Starwatch.API.Rest.Route
                     );
             }
 
-            if (query.TryGetBool("admin", out admin)) enumerator = enumerator.Where(p => p.AccountName != null && (Starbound.Settings.Accounts.GetAccount(p.AccountName)?.IsAdmin).GetValueOrDefault(false));
+            if (query.TryGetBool("admin", out admin))
+                enumerator = enumerator.Where(p => p.AccountName != null && (p.GetAccountAsync().Result?.IsAdmin).GetValueOrDefault(false));
 
             //Prepare the array
             Dictionary<int, string> players = new Dictionary<int, string>();

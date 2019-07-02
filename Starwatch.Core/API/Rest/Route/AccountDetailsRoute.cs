@@ -37,8 +37,8 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnGet(Query query)
         {
-            if (AuthenticationLevel == AuthLevel.SuperUser) return new RestResponse(RestStatus.OK, new AccountPatch(Account));
-            return new RestResponse(RestStatus.OK, new AccountPatch(Account) { Password = null });
+            if (AuthenticationLevel == AuthLevel.SuperUser) return new RestResponse(RestStatus.OK, new Account(Account));
+            return new RestResponse(RestStatus.OK, new Account(Account) { Password = null });
         }
 
         /// <summary>
@@ -51,13 +51,16 @@ namespace Starwatch.API.Rest.Route
             //Make sure we have permission to edit admin accounts
             if (Account.IsAdmin && AuthenticationLevel < AuthLevel.SuperBot)
                 return new RestResponse(RestStatus.Forbidden, msg: "Only SuperBots or above may delete admin accounts");
-
-            //Delete the account, return false if unsuccesful
-            if (!Starbound.Settings.Accounts.RemoveAccount(Account))
-                return new RestResponse(RestStatus.OK, res: false);
-
+            
             //Reload the server
-            var task = Starbound.SaveSettings(true);
+            var task = Task.Run(async () =>
+            {
+                if (!await Starbound.Configurator.RemoveAccountAsync(Account))
+                    return false;
+
+                return await Starbound.SaveConfigurationAsync(true);
+            });
+
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
             return new RestResponse(RestStatus.OK, res: task.Result);
         }
@@ -83,56 +86,53 @@ namespace Starwatch.API.Rest.Route
             string username = oa.Name ?? Account.Name;
             string password = oa.Password ?? Account.Password;
             bool isAdmin = oa.IsAdmin ?? Account.IsAdmin;
-            
-            if (username != Account.Name)
-            {
-                //Make sure the name isnt a duplicate
-                if (Starbound.Settings.Accounts.GetAccount(username) != null)
-                    return new RestResponse(RestStatus.BadRequest, "The username " + username + " already exists.");
-                
-                //Remove the old account
-                Starbound.Settings.Accounts.RemoveAccount(Account);
-
-                //Create the new account
-                Account = new Account(username)
-                {
-                    IsAdmin = isAdmin,
-                    Password = password
-                };
-
-                //Post it
-                Starbound.Settings.Accounts.AddAccount(Account);
-            }
-            else
-            {
-                //Edit the individual parts of the account
-                Account.Password = password;
-                Account.IsAdmin = isAdmin;
-                Starbound.Settings.Accounts.UpdateAccount(Account, password, isAdmin);
-
-            }
-
-            //Terminate any connections
-            var auth = this.Handler.ApiHandler.GetAuthentication(Account.Name);
-            this.Handler.ApiHandler.DisconnectAuthentication(auth, reason: "Authentication change");
-
-            //Save the settings
+  
+            //Prepare the task
             var task = Task.Run(async () =>
             {
-                //Apply the settings
-                await Starbound.SaveSettings(true);
-                
+                if (username != Account.Name)
+                {
+                    //Make sure the name isnt a duplicate
+                    if (Starbound.Configurator.GetAccountAsync(username) != null)
+                        return new RestResponse(RestStatus.BadRequest, "The username " + username + " already exists.");
+
+                    //Remove the old account
+                    await Starbound.Configurator.RemoveAccountAsync(Account);
+
+                    //Create the new account
+                    Account = new Account(username)
+                    {
+                        IsAdmin = isAdmin,
+                        Password = password
+                    };
+
+                }
+                else
+                {
+                    //Edit the individual parts of the account
+                    Account.Password = password;
+                    Account.IsAdmin = isAdmin;     
+                }
+
+                //Set the account                
+                await Starbound.Configurator.SetAccountAsync(Account);
+
+                //Terminate any connections
+                var auth = this.Handler.ApiHandler.GetAuthentication(Account.Name);
+                this.Handler.ApiHandler.DisconnectAuthentication(auth, reason: "Authentication change");
+
                 //Logout anyone that previously connected
                 foreach (var player in Starbound.Connections.GetPlayersEnumerator().Where(p => p.AccountName.Equals(Account.Name)))
                     await player.Kick("Account details changed.");
+
+                //Apply the settings
+                await Starbound.SaveConfigurationAsync(true);
+                return OnGet(query);
             });
 
-            //If we are async, abort asap
+            //If we are async, abort asap, otherwise wait for it to finish.
             if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-
-            //Wait for the settings to finish saving, then return the new account
-            task.Wait();
-            return OnGet(query);
+            return task.Result;
         }
     }
 }

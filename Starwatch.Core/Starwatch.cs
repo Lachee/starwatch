@@ -1,4 +1,5 @@
-﻿using Starwatch.Logging;
+﻿using Starwatch.Database;
+using Starwatch.Logging;
 using Starwatch.Starbound;
 using Starwatch.Util;
 using System;
@@ -14,7 +15,9 @@ namespace Starwatch
         public Logger Logger { get; private set; }
         public Server Server { get; private set; }
         public Configuration Configuration { get; private set; }
+        public DbContext DbContext { get; private set; }
         public API.ApiHandler ApiHandler { get; private set; }
+        public string PythonScriptsDirectory { get; private set; }
 
         public StarboundHandler(Configuration configuration)
         {
@@ -27,6 +30,9 @@ namespace Starwatch
                 OutputLogQueue.Initialize(outputFilename, Configuration.GetBool("output_append", false));
             }
 
+            //Initialize the region export directory
+            PythonScriptsDirectory = Configuration.GetString("python_parsers", "Resources/py");
+
             //Initialize the default logger
             this.Logger = new Logger("SWC");
         }
@@ -35,6 +41,20 @@ namespace Starwatch
         {
             try
             {
+                if (DbContext == null)
+                {
+                    Logger.Log("Initializing Database...");
+                    var settings = Configuration.GetObject<ConnectionSettings>("SQL", new ConnectionSettings()
+                    {
+                        Host = "localhost",
+                        Database = "starwatch",
+                        Username = "root",
+                        Password = "rootpass",
+                        Prefix = "sb_"
+                    });
+                    DbContext = new DbContext(settings, Logger.Child("SQL"));
+                }
+                
                 //Initialize the API first
                 if (ApiHandler == null)
                 {
@@ -81,7 +101,7 @@ namespace Starwatch
                 if (Server != null)
                 {
                     Logger.Log("Terminating and closing server...");
-                    await Server.Terminate();
+                    await Server.Terminate("Cancellation Token was aborted");
                 }
 
                 //Terminate the API
@@ -100,6 +120,13 @@ namespace Starwatch
             }
             finally
             {
+                //Close the database
+                if (DbContext != null)
+                {
+                    DbContext.Dispose();
+                    DbContext = null;
+                }
+
                 //Finally close the server
                 if (Server != null)
                 {

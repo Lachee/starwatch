@@ -148,6 +148,14 @@ namespace Starwatch.Logging
             this.Parent = parent;
         }
 		
+        /// <summary>
+        /// Creates a child logger
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        public Logger Child(string tag) => new Logger(tag, this);
+        
+
         #region Logging
         /// <summary>
         /// Logs a information message.

@@ -5,6 +5,7 @@ using Starwatch.API.Web;
 using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Rest.Route.Entities;
 using Starwatch.Extensions.Whitelist;
+using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -28,7 +29,7 @@ namespace Starwatch.API.Rest.Route
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             //Get the protection
-            ProtectedWorld protection = manager.GetWorld(World);
+            ProtectedWorld protection = manager.GetProtectionAsync(World).Result;
             if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
             //return the world
@@ -45,15 +46,21 @@ namespace Starwatch.API.Rest.Route
             var manager = GetWhitelistManager();
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
-            //Delete the protection
-            if (!manager.RemoveWorld(World))
-                return new RestResponse(RestStatus.ResourceNotFound, msg: "World does not have protection.");
+            var task = Task.Run(async () =>
+            {
+                //Get the world
+                ProtectedWorld protection = await manager.GetProtectionAsync(World);
+                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-            //Save the new lists
-            manager.Save();
+                //Delete the protection
+                var result = await manager.RemoveProtectionAsync(protection);
+                return new RestResponse(RestStatus.OK, result);
 
-            return new RestResponse(RestStatus.OK, res: true);
 
+            });
+
+            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
+            return task.Result;
         }
 
         /// <summary>
@@ -70,16 +77,21 @@ namespace Starwatch.API.Rest.Route
             if (!patch.AllowAnonymous.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'AllowAnonymous' is null or missing.");
             if (!patch.Mode.HasValue) return new RestResponse(RestStatus.BadRequest, msg: "Cannot create a new protection. The 'Mode' is null or missing.");
 
-            //Add the protection
-            if (!manager.AddWorld(World, patch.Mode.Value, patch.AllowAnonymous.Value, patch.Name))
-                return new RestResponse(RestStatus.BadRequest, msg: "Failed to create protection. Please ensure the protection doesnt already exist.");
-            
-            //Add the members
-            if (patch.AccountList != null)
-                manager.AddAccounts(World, patch.AccountList);
+            var task = Task.Run(async () => {
 
-            //Save the new lists
-            manager.Save();
+                //Add the protection
+                var protection = await manager.SetProtectionAsync(World, patch.Mode.Value, patch.AllowAnonymous.Value);
+
+                //Add the users
+                if (patch.AccountList != null)
+                {
+                    foreach (var accname in patch.AccountList)
+                    {
+                        var acc = await Starbound.Configurator.GetAccountAsync(accname);
+                        await protection.SetAccountAsync(acc, "");
+                    }
+                }
+            });
 
             //Return the newly added route
             return OnGet(query);
@@ -90,29 +102,37 @@ namespace Starwatch.API.Rest.Route
         /// </summary>
         public override RestResponse OnPatch(Query query, object payloadObject)
         {
-            //get the manager
-            var manager = GetWhitelistManager();
-            if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
+            //TODO: Fix t h is
+            throw new NotImplementedException();
 
-            //Get the world
-            var protection = manager.GetWorld(World);
-            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection for the world.");
-
-            //Get the payload and make sure its valid
-            OptionalProtectedWorld patch = (OptionalProtectedWorld)payloadObject;
-            protection.Name = patch.Name ?? protection.Name;
-            protection.AllowAnonymous = patch.AllowAnonymous.GetValueOrDefault(protection.AllowAnonymous);
-            protection.Mode = patch.Mode.GetValueOrDefault(protection.Mode);
-
-            //Add the members
-            if (patch.AccountList != null)
-                manager.AddAccounts(World, patch.AccountList);
-
-            //Save the new lists
-            manager.Save();
-
-            //Return the newly patched route
-            return OnGet(query);
+            ////get the manager
+            //var manager = GetWhitelistManager();
+            //if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
+            //
+            ////Get the world
+            //var protection = manager.GetWorld(World);
+            //if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection for the world.");
+            //
+            ////Get the payload and make sure its valid
+            //OptionalProtectedWorld patch = (OptionalProtectedWorld)payloadObject;
+            //protection.Name = patch.Name ?? protection.Name;
+            //protection.AllowAnonymous = patch.AllowAnonymous.GetValueOrDefault(protection.AllowAnonymous);
+            //protection.Mode = patch.Mode.GetValueOrDefault(protection.Mode);
+            //
+            ////Add the members
+            //if (patch.AccountList != null)
+            //{
+            //    foreach (var user in patch.AccountList)
+            //    {
+            //        protection.
+            //    }
+            //}
+            //
+            ////Save the new lists
+            //manager.Save();
+            //
+            ////Return the newly patched route
+            //return OnGet(query);
         }
 
 

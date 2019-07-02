@@ -26,7 +26,7 @@ namespace Starwatch.API.Rest.Route
         /// </summary>
         public override RestResponse OnPatch(Query query, object payloadObject)
         {
-            return base.OnPatch(query, payloadObject);
+            throw new System.NotImplementedException();
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Starwatch.API.Rest.Route
         /// </summary>
         public override RestResponse OnDelete(Query query)
         {
-            return base.OnDelete(query);
+            throw new System.NotImplementedException();
         }
     }
 }

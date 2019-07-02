@@ -16,6 +16,7 @@ using System.Timers;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 using Starwatch.API.Gateway.Event;
+using Starwatch.Database;
 
 namespace Starwatch.API
 {
@@ -35,6 +36,7 @@ namespace Starwatch.API
         public BlocklistHandler BlocklistHandler { get; }
         public AuthHandler AuthHandler { get; }
         public RestHandler RestHandler { get; }
+        public DbContext DbContext { get; }
 
         public HttpServer HttpServer { get; private set; }
 
@@ -53,6 +55,7 @@ namespace Starwatch.API
             this.Starwatch = starboundHandler;
             this.Logger = new Logger("API", starboundHandler.Logger);
             this.Configuration = configuration;
+            this.DbContext = Starwatch.DbContext.SpawnChild();
 
             //We create the blocklist handler. This is not added to the list as it is ALWAYS the first element
             this.BlocklistHandler = new BlocklistHandler();
@@ -393,8 +396,9 @@ namespace Starwatch.API
         /// <summary>Creates a user authentication</summary>
         private Authentication CreateUserAuthentication(string name, IIdentity identity = null)
         {
-            var account = Starwatch.Server.Settings.Accounts.GetAccount(identity.Name);
-            if (account != null) return new Authentication(account) { Identity = identity };
+            //The api, amazingly, is not-asynchronous. This is because the library I am using sucks.
+            var account = Starwatch.Server.Configurator.GetAccountAsync(identity.Name, DbContext).Result;
+            if (account != null && account.IsActive) return new Authentication(account) { Identity = identity };
             return null;
         }
 

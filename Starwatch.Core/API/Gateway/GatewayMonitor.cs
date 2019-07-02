@@ -54,13 +54,13 @@ namespace Starwatch.API.Gateway
 
         public override Task OnServerPreStart()
         {
-            Server.Settings.Accounts.OnAccountAdd += (account) =>
+            Server.Configurator.OnAccountAdd += (account) =>
                 Api.BroadcastRoute(new AccountDetailsRoute(account), "OnAccountAdd");
 
-            Server.Settings.Accounts.OnAccountUpdate += (account) =>
+            Server.Configurator.OnAccountUpdate += (account) =>
                 Api.BroadcastRoute(new AccountDetailsRoute(account), "OnAccountUpdate");
 
-            Server.Settings.Accounts.OnAccountRemove += (name) =>
+            Server.Configurator.OnAccountRemove += (name) =>
                 Api.BroadcastRoute((gateway) => name, "OnAccountRemove");
 
             return base.OnServerPreStart();

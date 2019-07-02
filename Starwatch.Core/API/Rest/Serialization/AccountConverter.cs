@@ -5,7 +5,7 @@
         public bool TryConvertArgument(RestHandler context, string value, out object result)
         {
             //Get the account
-            result = context.Starbound.Settings.Accounts.GetAccount(value);
+            result = context.Starbound.Configurator.GetAccountAsync(value).Result;
             return true;
         }
     }

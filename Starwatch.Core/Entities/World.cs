@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Starwatch.Starbound;
 using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Starwatch.Entities
 {
@@ -107,6 +109,37 @@ namespace Starwatch.Entities
             if (world == null) return false;
             return this.Whereami.Equals(world.Whereami);
         }
+
+
+        /// <summary>
+        /// Exports the JSON data for the world and returns the path it was exported too. Only available for worlds with a valid Filename.
+        /// </summary>
+        /// <param name="server"></param>
+        /// <returns></returns>
+        public async Task<string> ExportJsonDataAsync(Server server)
+        {
+            if (string.IsNullOrWhiteSpace(Filename))
+                throw new InvalidOperationException("Cannot export data for a world that does not have a filename.");
+
+            string inputFile = $"{server.StorageDirectory}/{Filename}";
+            string outputFile = $"{inputFile}.json";
+
+            if (!System.IO.File.Exists(inputFile))
+                throw new System.IO.FileNotFoundException("Failed to find the world's file.", inputFile);
+
+            //Run the process, waiting for it to exit.
+            return await Task.Run(() => {
+                var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python", $"-m starbound.clidump '{inputFile}' > {outputFile}")
+                {
+                    WorkingDirectory = server.Starwatch.PythonScriptsDirectory
+                });
+
+                p.WaitForExit();
+                p.Dispose();
+
+                return outputFile;
+            });
+        }
     }
 
     public class ClientShipWorld : World
@@ -135,6 +168,7 @@ namespace Starwatch.Entities
 
         public override string Filename => null;
         public override string Whereami => $"ClientShipWorld:{UUID}";
+
     }
 
     public class InstanceWorld : World
@@ -249,5 +283,55 @@ namespace Starwatch.Entities
 
         public override string Filename => $"{X}_{Y}_{System}_{Planet}{(Moon.HasValue ? $"_{Moon.Value}" : "")}.world";
         public override string Whereami => $"CelestialWorld:{X}:{Y}:{System}:{Planet}" + (Moon.HasValue ? $":{Moon.Value}" : "");
+    }
+
+
+    [System.Obsolete]
+    public class CelestialCoord : World
+    {
+        /// <summary>
+        /// Universe X coordinate of the planet
+        /// </summary>
+        public long X { get; set; }
+
+        /// <summary>
+        /// Universe Y coordinate of the planet
+        /// </summary>
+        public long Y { get; set; }
+
+        /// <summary>
+        /// The system ID the world is in.
+        /// </summary>
+        public long System { get; set; }
+
+
+        /// <summary>
+        /// Creates a new instance of the world.
+        /// </summary>
+        public CelestialCoord() { }
+
+        /// <summary>
+        /// Creates a new instance of the world, parsing the subs from the whereami information.
+        /// </summary>
+        /// <param name="subs"></param>
+        internal CelestialCoord(string[] subs)
+        {
+            //CelestialWorld:17:17:-198600707:10
+            //CelestialWorld:-55603946:357637721:-294801013:10=4934.94.1173.41
+            if (subs.Length != 3)
+                throw new ArgumentOutOfRangeException("subs", subs.Length, "CelestialCoord subs constructor requires 3 elements");
+
+            //Remove the =4934.94.1173.41 of the last element
+            int ioEquals = subs[subs.Length - 1].IndexOf('=');
+            if (ioEquals >= 0) subs[subs.Length - 1] = subs[subs.Length - 1].Substring(0, ioEquals);
+
+            //Parse the elements
+            X = int.Parse(subs[1]);
+            Y = int.Parse(subs[2]);
+            System = int.Parse(subs[3]);
+        }
+
+        public override string Filename => null;
+        public override string Whereami => $"{X}:{Y}:{System}";
     }
 }

@@ -12,13 +12,13 @@ namespace Starwatch.API.Rest.Route
 
         public BanRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
 
-        /// <summary>
-        /// Gets the last ban
-        /// </summary>
-        public override RestResponse OnGet(Query query)
-        {
-            return new RestResponse(RestStatus.OK, res: Starbound.Settings.CurrentBanTicket);
-        }
+        ///// <summary>
+        ///// Gets the last ban
+        ///// </summary>
+        //public override RestResponse OnGet(Query query)
+        //{
+        //    return new RestResponse(RestStatus.OK, res: Starbound.Settings.CurrentBanTicket);
+        //}
 
         /// <summary>
         /// Creates a new ban
@@ -72,7 +72,7 @@ namespace Starwatch.API.Rest.Route
 
             //Perform the ban and get the ban result
             var task = Starbound.Ban(ban);
-            ban = Starbound.Settings.GetBan(task.Result);
+            ban = Starbound.Configurator.GetBanAsync(task.Result).Result;
             
             //Kick the player if nessary, waiting for it to finish.
             if (player != null)

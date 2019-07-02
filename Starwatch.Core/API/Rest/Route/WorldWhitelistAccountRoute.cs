@@ -3,6 +3,7 @@ using Starwatch.Entities;
 using Starwatch.API.Web;
 using Starwatch.API.Rest.Serialization;
 using Starwatch.Extensions.Whitelist;
+using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -28,11 +29,18 @@ namespace Starwatch.API.Rest.Route
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             //Get the protection
-            ProtectedWorld protection = manager.GetWorld(World);
-            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+            var task = Task.Run(async () =>
+            {
+                //Get the protection
+                ProtectedWorld protection = await manager.GetProtectionAsync(World);
+                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-            bool isWhitelisted = protection.AccountList.Contains(Account.Name);
-            return new RestResponse(RestStatus.OK, res: isWhitelisted);
+                //Get hte account
+                var result = await protection.GetAccountAsync(Account);
+                return new RestResponse(RestStatus.OK, result);
+            });
+
+            return task.Result;
         }
         
 
@@ -46,13 +54,19 @@ namespace Starwatch.API.Rest.Route
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             //Get the protection
-            ProtectedWorld protection = manager.GetWorld(World);
-            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+            var task = Task.Run(async () =>
+            {
+                //Get the protection
+                ProtectedWorld protection = await manager.GetProtectionAsync(World);
+                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-            //Remove the account
-            bool success = manager.RemoveAccount(protection, Account);
-            return new RestResponse(RestStatus.OK, res: success);
+                //Get hte account
+                var result = await protection.RemoveAccountAsync(Account);
+                return new RestResponse(RestStatus.OK, result);
+            });
 
+            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
+            return task.Result;
         }
 
         /// <summary>
@@ -65,12 +79,19 @@ namespace Starwatch.API.Rest.Route
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             //Get the protection
-            ProtectedWorld protection = manager.GetWorld(World);
-            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+            var task = Task.Run(async () =>
+            {
+                //Get the protection
+                ProtectedWorld protection = await manager.GetProtectionAsync(World);
+                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-            //Add the account
-            bool success = manager.AddAccount(protection, Account);
-            return new RestResponse(RestStatus.OK, res: success);
+                //Get hte account
+                var result = await protection.SetAccountAsync(Account, query.GetString("reason", ""));
+                return new RestResponse(RestStatus.OK, result);
+            });
+
+            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
+            return task.Result;
         }
 
         public WhitelistManager GetWhitelistManager()

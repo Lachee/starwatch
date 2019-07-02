@@ -55,10 +55,10 @@ namespace Starwatch.Starbound
 
         #region Game Server Settings
         [JsonProperty("gameServerBind")]
-        public string GameServerBind { get; private set; }
+        public string GameServerBind { get; internal set; }
 
         [JsonProperty("gameServerPort")]
-        public int GameServerPort { get; private set; }
+        public int GameServerPort { get; internal set; }
 
         [JsonProperty("maxPlayers")]
         public int MaxPlayers { get; set; }
@@ -69,10 +69,10 @@ namespace Starwatch.Starbound
 
         #region Query Settings
         [JsonProperty("queryServerBind")]
-        public string QueryServerBind { get; private set; }
+        public string QueryServerBind { get; internal set; }
 
         [JsonProperty("queryServerPort")]
-        public int QueryServerPort { get; private set; }
+        public int QueryServerPort { get; internal set; }
 
         [JsonProperty("runQueryServer")]
         public bool RunQueryServer { get; set; }
@@ -86,10 +86,10 @@ namespace Starwatch.Starbound
 
         #region Rcon Settings
         [JsonProperty("rconServerBind")]
-        public string RconServerBind { get; private set; }
+        public string RconServerBind { get; internal set; }
 
         [JsonProperty("rconServerPort")]
-        public int RconServerPort { get; private set; }
+        public int RconServerPort { get; internal set; }
 
         [JsonProperty("rconServerPassword")]
         public string RconServerPassword { get; set; }
@@ -119,7 +119,7 @@ namespace Starwatch.Starbound
         #endregion
         
         [JsonProperty("serverUsers")]
-        public AccountList Accounts { get; set; }
+        public AccountList ServerUsers { get; set; }
 
         #region Bans
         [JsonProperty("bannedIPs")]
@@ -127,10 +127,14 @@ namespace Starwatch.Starbound
 
         [JsonProperty("bannedUuids")]
         private List<Ban> BannedUuids { get; set; }
-
-        [JsonProperty("bannedTicket")]
-        public long CurrentBanTicket { get; private set; }
         #endregion
+
+        public Settings()
+        {
+            ServerUsers = new AccountList();
+            BannedIps = new List<Ban>();
+            BannedUuids = new List<Ban>();
+        }
 
         /// <summary>
         /// Removes the ban from the ban list.
@@ -150,6 +154,17 @@ namespace Starwatch.Starbound
 
             return success;
         }
+        
+        /// <summary>
+        /// Adds a range on bans
+        /// </summary>
+        /// <param name="bans"></param>
+        public void AddBanRange(IEnumerable<Ban> bans)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            foreach (var b in bans) AddBan(b);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
 
         /// <summary>
         /// Adds the ban to the banned lists, incrementing the ticket and returning it afterwards.
@@ -159,6 +174,7 @@ namespace Starwatch.Starbound
         /// </summary>
         /// <param name="ban">The ban to add</param>
         /// <returns>The ticket that was used</returns>
+        [System.Obsolete("External use of this function is now obsolete. Please use the configurator.")]
         public long AddBan(Ban ban)
         {
             if (ban.BanType == BanType.Invalid)
@@ -169,11 +185,11 @@ namespace Starwatch.Starbound
 
             //Increment the ban ticket
             if (!ban.Ticket.HasValue)
-                ban.Ticket = GetNextTicket();
+                ban.Ticket = -1;
 
             //Append the current time
-            if (!ban.BannedAt.HasValue)
-                ban.BannedAt = DateTime.UtcNow.ToUnixEpoch();
+            if (!ban.CreatedDate.HasValue)
+                ban.CreatedDate = DateTime.UtcNow;
 
             //Make sure it has the ticket listed at least once.
             if (!ban.Reason.Contains("{ticket}")) ban.Reason += "\n^orange;Ban Ticket: ^white;{ticket}";
@@ -181,6 +197,15 @@ namespace Starwatch.Starbound
             //Replace the keys
             ban.Reason = ban.Reason.Replace("{ticket}", ban.Ticket.ToString());
             ban.Reason = ban.Reason.Replace("{moderator}", ban.Moderator);
+
+            //Replace the expiry date. If it has been set but we have got a date, add it
+            if (ban.ExpiryDate.HasValue && (!ban.Reason.Contains("{expire}") || !ban.Reason.Contains("{expire_time}")))
+                ban.Reason += "\n^orange;Expires ^white;{expire}";
+
+            //Replace the dates
+            ban.Reason = ban.Reason.Replace("{expire}", ban.ExpiryDate.HasValue ? ban.ExpiryDate.Value.ToString("dd MMM y hh:mm tt") : "never");
+            ban.Reason = ban.Reason.Replace("{expire_time}", ban.ExpiryDate.HasValue ? (ban.ExpiryDate.Value - DateTime.UtcNow).Format() : "never");
+            
 
             //Add to the correct array
             var ipban = ban.GetIpBan();
@@ -190,25 +215,35 @@ namespace Starwatch.Starbound
             if (uuidban != null) BannedUuids.Add(uuidban);
             return ban.Ticket.Value;
         }
-
+                
         /// <summary>
-        /// Gets a ban with the given ticket, combining both IP and UUID ban.
+        /// Enumerates over all the bans
         /// </summary>
-        /// <param name="ticket"></param>
         /// <returns></returns>
-        public Ban GetBan(long ticket)
+        public IEnumerable<Ban> GetBansEnumerable()
         {
-            var ipban = BannedIps.FirstOrDefault(b => b.Ticket.HasValue && b.Ticket.Value == ticket);
-            var uuidban = BannedIps.FirstOrDefault(b => b.Ticket.HasValue && b.Ticket.Value == ticket);
+            //Iterate over every IP ban.
+            // If they dont have a ticket, return it
+            // otherwise match it with its uuid ban
+            foreach(var ipban in BannedIps)
+            {
+                if (!ipban.Ticket.HasValue)
+                {
+                    yield return ipban;
+                }
+                else
+                {
+                    var uuidban = BannedIps.FirstOrDefault(b => b.Ticket.HasValue && b.Ticket.Value == ipban.Ticket.Value);
+                    yield return ipban.Combine(uuidban);
+                }                
+            }
 
-            if (ipban == null) return uuidban;
-            return ipban.Combine(uuidban);
+            //Iterate over every uuid ban for ones that dont have tickets
+            foreach(var uuidban in BannedUuids)
+            {
+                if (!uuidban.Ticket.HasValue)
+                    yield return uuidban;
+            }
         }
-        
-        /// <summary>
-        /// Increments the ban ticket and return the new one.
-        /// </summary>
-        /// <returns></returns>
-        public long GetNextTicket() => (CurrentBanTicket += 2);
     }
 }

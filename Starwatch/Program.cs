@@ -58,12 +58,31 @@ namespace Starwatch
                             Console.WriteLine("Unkown Command: {0}", line);
                             break;
 
+                        case "restart":
+                            Console.WriteLine("Restarting Server...");
+                            Starwatch?.Server?.Terminate("CLI Restart").Wait();
+                            break;
+
+                        case "import":
+                            var plevel = Starwatch.Logger.Level;
+                            Starwatch.Logger.Level = Logging.Logger.LogLevel.None;
+                            Console.WriteLine("Are you sure? [y/n]: ");
+                            if (Console.ReadLine().StartsWith("y"))
+                            {
+                                Console.WriteLine("Triggering Import...");
+                                Starwatch.Logger.Level = plevel;
+                                Starwatch?.Server?.Configurator?.ImportSettingsAsync(Starwatch?.Server?.ConfigurationFile).Wait();
+                            }
+                            Starwatch.Logger.Level = plevel;
+                            Console.WriteLine("Done");
+                            break;
+
                         case "exit":
                         case "quit":
                         case "stop":
                             Console.WriteLine("Cancelling Token...");
                             Starwatch.KeepAlive = false;
-                            Starwatch?.Server?.Terminate().Wait();
+                            Starwatch?.Server?.Terminate("CLI Stop").Wait();
                             tokenSource.Cancel();
                             readLines = false;
                             break;

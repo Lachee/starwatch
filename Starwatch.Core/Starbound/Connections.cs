@@ -17,8 +17,8 @@ namespace Starwatch.Starbound
     public class Connections : Monitoring.Monitor
     {
         public static readonly bool ENFORCE_STRICT_NAMES = true;
-        private static readonly Regex regexLoggedMsg = new Regex(@"'(.*)' as player '(.*)' from address (\d+\.\d+\.\d+\.\d+)", RegexOptions.Compiled);
-        private static readonly Regex regexClientMsg = new Regex(@"'(.*)' <(\d+)> \((\d+\.\d+\.\d+\.\d+)\) (connected|disconnected)( for reason: (.*))?", RegexOptions.Compiled);
+        private static readonly Regex regexLoggedMsg = new Regex(@"''(.*)'' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
+        private static readonly Regex regexClientMsg = new Regex(@"'(.*)' <(\d+)> \(([a-zA-Z0-9.:]*)\) (connected|disconnected)( for reason: (.*))?", RegexOptions.Compiled);
 
         /// <summary>
         /// The last ID to conenct
@@ -43,6 +43,7 @@ namespace Starwatch.Starbound
         public Player this[int connection] => GetPlayer(connection);
 
         private Dictionary<int, Player> _connections = new Dictionary<int, Player>();
+        private Dictionary<int, Session> _sessions = new Dictionary<int, Session>();
         private List<PendingPlayer> _pending = new List<PendingPlayer>();
         private struct PendingPlayer
         {
@@ -113,7 +114,7 @@ namespace Starwatch.Starbound
                 if (_connections.ContainsKey(connection))
                 {
                     Logger.Log("Player updated their location!");
-                    _connections[connection].Location = World.Parse(location);
+                    _connections[connection].Whereami = location;
                     try
                     {
                         OnPlayerUpdate?.Invoke(_connections[connection]);
@@ -183,15 +184,31 @@ namespace Starwatch.Starbound
                         var pending = _pending.Where(pp => pp.address.Equals(address) && pp.character.Equals(character)).FirstOrDefault();
                         if (pending.character.Equals(character))
                         {
-                            //Add them to the full list and remove them from pending
+                            //Remove the account from the pending and create a new session
                             _pending.Remove(pending);
-                            _connections.Add(connection, new Player(Server, connection)
+
+                            //Create the player object
+                            var player = new Player(Server, connection)
                             {
                                 AccountName = pending.account,
                                 Username = pending.character,
                                 IP = pending.address
-                            });
+                            };
 
+                            _connections.Add(connection, player);
+                            await CreateSessionAsync(player);
+
+                            //Save the last seen date of the account.
+                            if (!player.IsAnonymous)
+                            {
+                                var account = await player.GetAccountAsync();
+                                if (account != null)
+                                {
+                                    account.UpdateLastSeen();
+                                    await account.SaveAsync(Server.DbContext);
+                                }
+                            }
+                            
                             //Send the event off
                             try
                             {
@@ -230,6 +247,7 @@ namespace Starwatch.Starbound
 
                         //Remove the connection
                         _connections.Remove(connection);
+                        await RemoveSessionAsync(connection);
                     }
                 }
                 else
@@ -244,7 +262,7 @@ namespace Starwatch.Starbound
             return false;
         }
 
-        public override Task OnServerStart()
+        public override async Task OnServerStart()
         {
             if (Server.Rcon != null)
             {
@@ -259,9 +277,11 @@ namespace Starwatch.Starbound
                 _uuidTimer.Start();
             }
 
-            return base.OnServerStart();
+            //Clear all sessions
+            await ClearSessionsAsync();
+            await base.OnServerStart();
         }
-        public override Task OnServerExit(string reason)
+        public override async Task OnServerExit(string reason)
         {
             //Clear all pending connections and existing connections.
             _pending.Clear();
@@ -269,15 +289,20 @@ namespace Starwatch.Starbound
 
             //Stop the time if we have it.
             if (_uuidTimer != null) _uuidTimer.Stop();
-            
+
+            //Clear all sessions
+            await ClearSessionsAsync();
+
             //We do not send any events as what ever client that listens to this should expect a server exit to result in 0 connections.
-            return base.OnServerExit(reason);
+            await base.OnServerExit(reason);
         }
         #endregion
 
         #region Getters
         public IEnumerable<Player> GetPlayersEnumerator() => _connections.Values;
+        public IEnumerable<Session> GetSessionsEnumerator() => _sessions.Values;
         public Player[] GetPlayers() => GetPlayersEnumerator().ToArray();
+        public Session[] GetSessions() => GetSessionsEnumerator().ToArray();
         public int[] GetConnectionIDs() =>_connections.Keys.ToArray();
         #endregion
 
@@ -285,12 +310,47 @@ namespace Starwatch.Starbound
         /// <summary>
         /// Gets the player at the given index
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="connection"></param>
         /// <returns></returns>
-        public Player GetPlayer(int id)
+        public Player GetPlayer(int connection)
         {
             Player player;
-            if (_connections.TryGetValue(id, out player)) return player;
+            if (_connections.TryGetValue(connection, out player)) return player;
+            return null;
+        }
+
+        /// <summary>
+        /// Checks if the connection still exists
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        public bool HasPlayer(int connection) => _connections.ContainsKey(connection);
+
+        /// <summary>
+        /// Checks if the player is still connected
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        public bool IsConnected(Player player)
+        {
+            if (_connections.TryGetValue(player.Connection, out var other))
+            {
+                if (player == other) return true;
+                if (player.UUID != null && other.UUID != null) return player.UUID == other.UUID;
+                return player.AccountName == other.AccountName && player.Username == other.Username;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to get a session
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        public Session GetSession(int connection)
+        {
+            if (_sessions.TryGetValue(connection, out var session)) return session;
             return null;
         }
 
@@ -315,6 +375,7 @@ namespace Starwatch.Starbound
                     {
                         Logger.Log("User " + kp.Value.Username + " updated their uuid");
                         kp.Value.UUID = listing.UUID;
+                        await UpdateSessionAsync(kp.Value);
 
                         try
                         {
@@ -360,6 +421,7 @@ namespace Starwatch.Starbound
                 }
 
                 _connections.Remove(connection);
+                await RemoveSessionAsync(connection);
             }
 
             //Add all the new people that are left in the list
@@ -367,14 +429,16 @@ namespace Starwatch.Starbound
             {
                 //The user does not exist so we will add them
                 Logger.Log("User " + kp.Value.Name + " ( " + kp.Value.Connection + " ) joined without us noticing.");
-
-                //Add the new user
-                _connections.Add(kp.Value.Connection, new Player(Server, kp.Value.Connection)
+                var player = new Player(Server, kp.Value.Connection)
                 {
                     Username = kp.Value.Name,
                     UUID = kp.Value.UUID,
                     IP = null
-                });
+                };
+
+                //Add the new user
+                _connections.Add(kp.Value.Connection, player);
+                await CreateSessionAsync(player);
 
                 try
                 {
@@ -410,7 +474,7 @@ namespace Starwatch.Starbound
             {
                 //Update the location and execute the event
                 Logger.Log("Player updated their location via whereis!");
-                _connections[connection].Location = World.Parse(response.Message);
+                _connections[connection].Whereami = response.Message;
                 try
                 {
                     OnPlayerUpdate?.Invoke(_connections[connection]);
@@ -457,6 +521,72 @@ namespace Starwatch.Starbound
             }
         }
         #endregion
+
+        /// <summary>
+        /// Creates a new session
+        /// </summary>
+        /// <param name="player"></param>
+        /// <returns></returns>
+        private async Task<Session> CreateSessionAsync(Player player)
+        {
+            //Remove any previous session, just incase
+            await RemoveSessionAsync(player.Connection);
+
+            //Create the new session, save it, remember it, return it.
+            Session session = new Session(player);
+            await session.SaveAsync(Server.DbContext);
+            _sessions.Add(player.Connection, session);
+            return session;
+        }
+
+        /// <summary>
+        /// Updates a session
+        /// </summary>
+        /// <param name="player"></param>
+        /// <returns></returns>
+        private async Task<Session> UpdateSessionAsync(Player player)
+        {
+            Session session = null;
+            if (!_sessions.TryGetValue(player.Connection, out session))
+                session = await CreateSessionAsync(player);
+
+            session.Player = player;
+            await session.SaveAsync(Server.DbContext);
+            return session;
+        }
+
+        /// <summary>
+        /// Removes a session for a player
+        /// </summary>
+        /// <param name="player"></param>
+        /// <returns></returns>
+        private async Task<bool> RemoveSessionAsync(int connection)
+        {
+            if (_sessions.TryGetValue(connection, out var session))
+                return await RemoveSessionAsync(session);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Removes a session
+        /// </summary>
+        /// <returns></returns>
+        private async Task<bool> RemoveSessionAsync(Session session)
+        {
+            await session.FinishAsync();
+            return _sessions.Remove(session.Player.Connection);
+        }
+
+        /// <summary>
+        /// Clears all our sessions
+        /// </summary>
+        /// <returns></returns>
+        private async Task ClearSessionsAsync()
+        {
+            await Session.FinishAllAsync(Server.DbContext);
+            _sessions.Clear();
+        }
     }
 }
 

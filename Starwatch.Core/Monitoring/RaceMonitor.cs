@@ -40,6 +40,15 @@ We detected the race ^white;'{key}'
             {
                 //Check its key
                 string newKey = msg.Content.Cut(EXCEPTION_MAP_KEY.Length + 6, msg.Content.Length - 25);
+
+                //We need to validate to make sure the key isn't the coordinate exploit
+                if (newKey[0] == '(')
+                {
+                    Logger.LogError("Possible coordinate exploit: {0}", newKey);
+                    return false;
+                }
+
+                //If the key is different, then reset our counters.
                 if (newKey != _errorKey)
                 {
                     //Reset the tally and the connection
@@ -78,8 +87,21 @@ We detected the race ^white;'{key}'
                     //Prepare the reason
                     string reason = BanFormat.Replace("{key}", _errorKey);
 
-                    //Ban and restart
-                    await Server.Ban(player, reason, "race-monitor", false, false);
+                    var account = await player.GetAccountAsync();
+                    if (account != null && account.IsAdmin)
+                    {
+                        //If the player is a admin, then we will just kick them
+                        // We will wait some time just for the kick to be applied.
+                        await Server.Kick(player, reason);
+                        await Task.Delay(100);
+                    }
+                    else
+                    {
+                        //We will ban the player because they are not an admin
+                        await Server.Ban(player, reason, "race-monitor", false, false);
+                    }
+
+                    //Throw an exception, telling the server to shutdown
                     throw new Exceptions.ServerShutdownException("Custom race detected");
                 }
             }            

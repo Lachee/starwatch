@@ -13,7 +13,7 @@
             }
 
             //Get the ban
-            result = context.Starbound.Settings.GetBan(ticket);
+            result = context.Starbound.Configurator.GetBanAsync(ticket).Result;
             return true;
         }
     }
