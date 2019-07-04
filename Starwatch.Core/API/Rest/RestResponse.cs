@@ -14,17 +14,21 @@ namespace Starwatch.API.Rest
         [JsonProperty("Status")]
         public RestStatus Status { get; }
 
-        [JsonProperty("Message")]
-        public string Message { get; }
-
         [JsonProperty("Route", NullValueHandling = NullValueHandling.Ignore)]
         public string Route { get; set; } = null;
 
-        [JsonProperty("Time", NullValueHandling = NullValueHandling.Ignore)]
-        public double Time { get; set; } = 0;
+        [JsonProperty("Message")]
+        public string Message { get; }
+
+        [JsonProperty("Type", NullValueHandling = NullValueHandling.Ignore)]
+        public string Type => Response?.GetType().FullName;
 
         [JsonProperty("Response")]
         public object Response { get; }
+
+        [JsonProperty("ExecuteTime", NullValueHandling = NullValueHandling.Ignore)]
+        public double Time { get; set; } = 0;
+
 
         /// <summary>
         /// Creates a new NotImplemented rest response

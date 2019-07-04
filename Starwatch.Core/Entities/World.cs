@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Starwatch.Starbound;
 using System;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -26,16 +27,23 @@ namespace Starwatch.Entities
         public abstract string Whereami { get; }
         public abstract string Filename { get; }
 
+        [JsonIgnore]
+        public virtual string FileExtension => Filename == null ? null : System.IO.Path.GetExtension(Filename);
+
+        [JsonIgnore]
+        public virtual string JsonFilename => Filename + ".json";
+
         /// <summary>
         /// Parses the whereami to a world object.
         /// </summary>
         /// <param name="whereami"></param>
         /// <returns></returns>
-        private static World ParseWhereami(string whereami)
+        public static World ParseWhereami(string whereami)
         {
             //Seperate the parts
             string[] subs = whereami.Split(':');
             if (subs.Length < 2 || subs.Length > 6) return null;
+            if (subs.Length == 3) return new SystemWorld(new string[] { "SystemWorld", subs[0], subs[1], subs[2] });
 
             //determin the type
             switch (subs[0])
@@ -52,7 +60,7 @@ namespace Starwatch.Entities
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        private static World ParseFilename(string filename)
+        public static World ParseFilename(string filename)
         {
             //Trim it a bit so its only the important data.
             filename = System.IO.Path.GetFileName(filename);
@@ -70,16 +78,28 @@ namespace Starwatch.Entities
             //Split the parts into subs
             string[] subs = filename.Split(isInstance ? '-' : '_');
 
-            //Clear the .world part
+            //Remove the extension if any
             string ending = subs[subs.Length - 1];
             if (ending.EndsWith(".world"))
             {
+                //Remove the .world
                 ending = ending.Substring(0, ending.Length - 6);
                 subs[subs.Length - 1] = ending;
             }
+            else if (ending.EndsWith(".system"))
+            {
+                //Remove the .system
+                ending = ending.Substring(0, ending.Length - 7);
+                subs[subs.Length - 1] = ending;
+            }
+
+            //We have 3 coords, it must be a system.
+            if (!isInstance && subs.Length == 4)
+                subs[0] = "SystemWorld";
 
             //return the correct object
             if (isInstance) return new InstanceWorld(subs);
+            if (subs.Length == 4) return new SystemWorld(subs);
             return new CelestialWorld(subs);
         }
 
@@ -90,7 +110,7 @@ namespace Starwatch.Entities
         /// <returns></returns>
         public static World Parse(string identifier)
         {
-            bool isFilename = identifier.EndsWith(".world") || !identifier.Contains(":");
+            bool isFilename = identifier.EndsWith(".world") || identifier.EndsWith(".system") || !identifier.Contains(":");
             if (!isFilename)
             {
                 return ParseWhereami(identifier);
@@ -110,36 +130,114 @@ namespace Starwatch.Entities
             return this.Whereami.Equals(world.Whereami);
         }
 
-
         /// <summary>
-        /// Exports the JSON data for the world and returns the path it was exported too. Only available for worlds with a valid Filename.
+        /// Gets the absolute file path. Only available for worlds with a filename.
         /// </summary>
         /// <param name="server"></param>
         /// <returns></returns>
-        public async Task<string> ExportJsonDataAsync(Server server)
+        public string GetAbsolutePath(Server server)
         {
             if (string.IsNullOrWhiteSpace(Filename))
                 throw new InvalidOperationException("Cannot export data for a world that does not have a filename.");
 
-            string inputFile = $"{server.StorageDirectory}/{Filename}";
-            string outputFile = $"{inputFile}.json";
+            return Path.Combine(server.StorageDirectory, "universe/", Filename);
+        }
+
+        /// <summary>
+        /// Gets the absolute path for the json.
+        /// </summary>
+        /// <param name="server"></param>
+        /// <returns></returns>
+        public string GetAbsoluteJsonPath(Server server)
+        {
+            if (string.IsNullOrWhiteSpace(Filename))
+                throw new InvalidOperationException("Cannot export data for a world that does not have a filename.");
+
+            return Path.Combine(server.StorageDirectory, "universe/", JsonFilename);
+        }
+
+        /// <summary>
+        /// Exports the JSON data for the world and returns the path it was exported too. Only available for worlds with a valid Filename.
+        /// </summary>
+        /// <param name="server">The server to export from</param>
+        /// <param name="overwrite">Overwrite the file if it already exists.</param>
+        /// <returns></returns>
+        public async Task<string> ExportJsonDataAsync(Server server, bool overwrite = false)
+        {
+            if (string.IsNullOrWhiteSpace(Filename))
+                throw new InvalidOperationException("Cannot export data for a world that does not have a filename.");
+
+            if (!FileExtension.Equals(".world", StringComparison.InvariantCultureIgnoreCase))
+                throw new InvalidOperationException("Cannot export data for a non-world. Filename requires .world extension");
+
+            string inputFile = GetAbsolutePath(server);
+            string outputFile = Path.Combine(server.StorageDirectory, "universe/", JsonFilename);
+
+            File.WriteAllText(server.Starwatch.PythonScriptsDirectory + "/tmp.txt", "TMP");
 
             if (!System.IO.File.Exists(inputFile))
                 throw new System.IO.FileNotFoundException("Failed to find the world's file.", inputFile);
 
+            if (!overwrite && System.IO.File.Exists(outputFile))
+                return outputFile;
+
             //Run the process, waiting for it to exit.
             return await Task.Run(() => {
-                var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python", $"-m starbound.clidump '{inputFile}' > {outputFile}")
+                var file = inputFile.Replace("\\", "/");
+                var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python", $"-m starbound.clidump \"{file}\"")
                 {
-                    WorkingDirectory = server.Starwatch.PythonScriptsDirectory
+                    WorkingDirectory = server.Starwatch.PythonScriptsDirectory,
+                    RedirectStandardOutput = true
                 });
 
+                string content = p.StandardOutput.ReadToEnd();
                 p.WaitForExit();
+
                 p.Dispose();
 
+                File.WriteAllText(outputFile, content);
                 return outputFile;
             });
         }
+    }
+
+    public class SystemWorld : World
+    {
+        /// <summary>
+        /// The X coordinate
+        /// </summary>
+        public long X { get; set; }
+        /// <summary>
+        /// The Y coordinate
+        /// </summary>
+        public long Y { get; set; }
+        /// <summary>
+        /// The Z coordinate
+        /// </summary>
+        public long Z { get; set; }
+
+        /// <summary>
+        /// Creates a new instance of the world.
+        /// </summary>
+        public SystemWorld() { }
+
+        /// <summary>
+        /// Creates a new instance of the world, parsing the subs from the whereami information.
+        /// </summary>
+        /// <param name="subs"></param>
+        internal SystemWorld(string[] subs)
+        {
+            if (subs.Length != 4) throw new ArgumentOutOfRangeException("subs", subs.Length, "SystemWorld subs constructor requires exactly 4 elements: SystemWorld, X, Y, Z");
+            if (subs[0] != "SystemWorld") throw new ArgumentException("The first element of the subs must be equal to SystemWorld");
+
+            X = long.Parse(subs[1]);
+            Y = long.Parse(subs[2]);
+            Z = long.Parse(subs[3]);
+        }
+
+        public override string FileExtension => ".system";
+        public override string Filename => $"{X}_{Y}_{Z}.system";
+        public override string Whereami => $"{X}:{Y}:{Z}";
     }
 
     public class ClientShipWorld : World
@@ -166,6 +264,7 @@ namespace Starwatch.Entities
             UUID = subs[1];
         }
 
+        public override string FileExtension => null;
         public override string Filename => null;
         public override string Whereami => $"ClientShipWorld:{UUID}";
 
@@ -217,11 +316,12 @@ namespace Starwatch.Entities
             Val = subs[3];
         }
 
+        public override string FileExtension => ".world";
         public override string Filename => $"unique-{Type}-{UID}-{Val}.world";
         public override string Whereami => $"InstanceWorld:{Type}:{UID}:{Val}";
     }
 
-    public class CelestialWorld : World
+    public partial class CelestialWorld : World
     {
         /// <summary>
         /// Universe X coordinate of the planet
@@ -234,9 +334,9 @@ namespace Starwatch.Entities
         public long Y { get; set; }
 
         /// <summary>
-        /// The system ID the world is in.
+        /// Universe Z coordinate of the planet
         /// </summary>
-        public long System { get; set; }
+        public long Z { get; set; }
 
         /// <summary>
         /// The planet ID of the world
@@ -276,62 +376,13 @@ namespace Starwatch.Entities
             //Parse the elements
             X = int.Parse(subs[1]);
             Y = int.Parse(subs[2]);
-            System = int.Parse(subs[3]);
+            Z = int.Parse(subs[3]);
             Planet = int.Parse(subs[4]);
             if (subs.Length == 6) Moon = int.Parse(subs[5]);
         }
 
-        public override string Filename => $"{X}_{Y}_{System}_{Planet}{(Moon.HasValue ? $"_{Moon.Value}" : "")}.world";
-        public override string Whereami => $"CelestialWorld:{X}:{Y}:{System}:{Planet}" + (Moon.HasValue ? $":{Moon.Value}" : "");
-    }
-
-
-    [System.Obsolete]
-    public class CelestialCoord : World
-    {
-        /// <summary>
-        /// Universe X coordinate of the planet
-        /// </summary>
-        public long X { get; set; }
-
-        /// <summary>
-        /// Universe Y coordinate of the planet
-        /// </summary>
-        public long Y { get; set; }
-
-        /// <summary>
-        /// The system ID the world is in.
-        /// </summary>
-        public long System { get; set; }
-
-
-        /// <summary>
-        /// Creates a new instance of the world.
-        /// </summary>
-        public CelestialCoord() { }
-
-        /// <summary>
-        /// Creates a new instance of the world, parsing the subs from the whereami information.
-        /// </summary>
-        /// <param name="subs"></param>
-        internal CelestialCoord(string[] subs)
-        {
-            //CelestialWorld:17:17:-198600707:10
-            //CelestialWorld:-55603946:357637721:-294801013:10=4934.94.1173.41
-            if (subs.Length != 3)
-                throw new ArgumentOutOfRangeException("subs", subs.Length, "CelestialCoord subs constructor requires 3 elements");
-
-            //Remove the =4934.94.1173.41 of the last element
-            int ioEquals = subs[subs.Length - 1].IndexOf('=');
-            if (ioEquals >= 0) subs[subs.Length - 1] = subs[subs.Length - 1].Substring(0, ioEquals);
-
-            //Parse the elements
-            X = int.Parse(subs[1]);
-            Y = int.Parse(subs[2]);
-            System = int.Parse(subs[3]);
-        }
-
-        public override string Filename => null;
-        public override string Whereami => $"{X}:{Y}:{System}";
+        public override string FileExtension => ".world";
+        public override string Filename => $"{X}_{Y}_{Z}_{Planet}{(Moon.HasValue ? $"_{Moon.Value}" : "")}.world";
+        public override string Whereami => $"CelestialWorld:{X}:{Y}:{Z}:{Planet}" + (Moon.HasValue ? $":{Moon.Value}" : "");
     }
 }

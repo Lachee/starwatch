@@ -5,6 +5,22 @@ namespace Starwatch.API.Rest.Util
 {
     static class RestExtensions
     {
+        /// <summary>
+        /// Writes an error message
+        /// </summary>
+        /// <param name="response"></param>
+        /// <param name="status"></param>
+        /// <param name="message"></param>
+        public static void WriteRest(this HttpListenerResponse response, RestStatus status, string message)
+        {
+            response.WriteRest(new RestResponse(status, msg: message));
+        }
+
+        /// <summary>
+        /// Writes a rest response
+        /// </summary>
+        /// <param name="response"></param>
+        /// <param name="rest"></param>
         public static void WriteRest(this HttpListenerResponse response, RestResponse rest)
         {
             switch(rest.Status)

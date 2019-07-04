@@ -17,6 +17,7 @@ using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 using Starwatch.API.Gateway.Event;
 using Starwatch.Database;
+using Starwatch.API.Util;
 
 namespace Starwatch.API
 {
@@ -34,6 +35,7 @@ namespace Starwatch.API
 
         private List<IRequestHandler> requestHandlers = new List<IRequestHandler>();
         public BlocklistHandler BlocklistHandler { get; }
+        public WorldHandler WorldHandler { get; }
         public AuthHandler AuthHandler { get; }
         public RestHandler RestHandler { get; }
         public DbContext DbContext { get; }
@@ -71,6 +73,10 @@ namespace Starwatch.API
                 });
                 RestHandler.RegisterRoutes(Assembly.GetAssembly(typeof(Rest.Route.MetaEndpointsRoute)));
             }
+
+            //Register the world handler
+            if (configuration.GetBool("enable_world", true))
+                requestHandlers.Add(this.WorldHandler = new WorldHandler(this));
 
             //Register the auth handler
             if (configuration.GetBool("enable_auth", true))
@@ -166,11 +172,24 @@ namespace Starwatch.API
 
             //Iterate over every handler and abort when we get the first valid one.
             for (int i = 0; i < requestHandlers.Count; i++)
-                if (requestHandlers[i].HandleRequest(method, args, authentication))
+            {
+                try
+                {
+                    //Try to resolve.
+                    if (requestHandlers[i].HandleRequest(method, args, authentication))
+                        return;
+                }
+                catch (Exception e)
+                {
+                    //Internal error occured while trying to process the rest.
+                    args.Response.WriteRest(RestStatus.InternalError, e.Message);
                     return;
+                }
+            }
 
             //We didnt find anything so return a 404
             args.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            args.Response.WriteText("File Not Found");
             args.Response.Close();
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using Starwatch.API.Web;
+using Starwatch.Database;
 
 namespace Starwatch.API.Rest.Routing
 {
@@ -29,6 +30,11 @@ namespace Starwatch.API.Rest.Routing
         /// The payload type for the POST and PUT requests.
         /// </summary>
         public virtual Type PayloadType => null;
+
+        /// <summary>
+        /// The database context
+        /// </summary>
+        public DbContext DbContext => Handler.ApiHandler.DbContext;
 
         /// <summary>
         /// Is the endpoint silent and not log?

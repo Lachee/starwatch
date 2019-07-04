@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Starwatch.Entities;
 using Starwatch.Util;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,6 +77,35 @@ namespace Starwatch
                             }
                             Starwatch.Logger.Level = plevel;
                             Console.WriteLine("Done");
+                            break;
+
+                        case "process-worlds":
+                            if (Starwatch == null || Starwatch.Server == null)
+                            {
+                                Console.WriteLine("Cannot process all worlds because the server doesnt exist.");
+                                break;
+                            }
+
+                            Console.WriteLine("Processing All Worlds...");
+                            foreach(var filepath in Directory.EnumerateFiles(Starwatch.Server.StorageDirectory + "/universe/", "*.world"))
+                            {
+                                //Generate the world
+                                Console.WriteLine("Processing " + filepath);
+                                var world = World.ParseFilename(filepath) as CelestialWorld;
+
+                                //Save the world
+                                try
+                                {
+                                    world.LoadDetailsAsync(Starwatch.Server).Wait();
+                                    Console.WriteLine(" = " + world.Details?.Name);
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("ERROR: " + e.Message);
+                                }
+                            }
+
+                            Console.WriteLine("DONE");
                             break;
 
                         case "exit":

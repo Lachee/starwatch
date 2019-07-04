@@ -30,7 +30,7 @@ namespace Starwatch.API.Rest.Route
 
             //Get the protection
             ProtectedWorld protection = manager.GetProtectionAsync(World).Result;
-            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+            if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "The world does not have any protection.");
 
             //return the world
             return new RestResponse(RestStatus.OK, res: new OptionalProtectedWorld(protection));
@@ -50,7 +50,7 @@ namespace Starwatch.API.Rest.Route
             {
                 //Get the world
                 ProtectedWorld protection = await manager.GetProtectionAsync(World);
-                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "The world does not have any protection.");
 
                 //Delete the protection
                 var result = await manager.RemoveProtectionAsync(protection);

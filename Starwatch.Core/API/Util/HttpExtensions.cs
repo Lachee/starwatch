@@ -61,6 +61,11 @@ namespace Starwatch.API.Util
     {
         private static int CHUNK_SIZE = 2048;
 
+        public static Multipart ReadMultipart(this HttpListenerRequest request)
+        {
+            return new Multipart(request.InputStream, request.ContentEncoding);
+        }
+
         /// <summary>
         /// Reads a file and writes it to the response.
         /// </summary>
@@ -71,7 +76,7 @@ namespace Starwatch.API.Util
             if (!File.Exists(path))
             {
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-                response.WriteText($"The file '{path}' could not be found. Are you sure this is the correct url?");
+                response.WriteText($"The file '{path}' could not be found.");
                 return;
             }
 

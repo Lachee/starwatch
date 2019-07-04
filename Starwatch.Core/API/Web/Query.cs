@@ -109,6 +109,7 @@ namespace Starwatch.API.Web
             return long.TryParse(v, out result);
         }
 
+
         /// <summary>
         /// Tries to get a string
         /// </summary>
@@ -185,6 +186,18 @@ namespace Starwatch.API.Web
             return @default;
         }
 
+
+
+        /// <summary>
+        /// Gets a optional long
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public long? GetOptionalLong(string key)
+        {
+            if (TryGetLong(key, out var r)) return r;
+            return null;
+        }
 
 
 
