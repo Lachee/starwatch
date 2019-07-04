@@ -247,8 +247,15 @@ namespace Starwatch.Entities
             //Try to load it. If we fail, create and save new details
             if (!await Details.LoadAsync(db ?? server.DbContext))
             {
-                Details = await CreateDetailsAsync(server, db);
-                await Details.SaveAsync(db ?? server.DbContext);
+                try
+                {
+                    Details = await CreateDetailsAsync(server, db);
+                    await Details.SaveAsync(db ?? server.DbContext);
+                }
+                catch (Exception)
+                {
+                    Details = null;
+                }
             }
 
             //Return the details.

@@ -2,6 +2,7 @@
 using Starwatch.API.Rest.Routing;
 using Starwatch.Entities;
 using Starwatch.API.Rest.Serialization;
+using System;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -19,7 +20,7 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             if (World is CelestialWorld celesial && celesial.Details == null)
-                celesial.LoadDetailsAsync(Starbound).Wait();
+                try { celesial.LoadDetailsAsync(Starbound).Wait(); } catch (Exception) { }
 
             return new RestResponse(RestStatus.OK, res: World);
         }
