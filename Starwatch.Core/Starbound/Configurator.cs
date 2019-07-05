@@ -6,6 +6,7 @@ using Starwatch.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -153,8 +154,10 @@ namespace Starwatch.Starbound
         /// <returns></returns>
         public async Task<Settings> ExportSettingsAsync()
         {
+            //Start a timer
+            var stopwatch = Stopwatch.StartNew();
             Logger.Log("Exporting Settings");
-
+            
             //Generate the settings
             Settings settings = await DbContext.SelectOneAsync<Settings>("!servers", (reader) =>
             {
@@ -179,14 +182,16 @@ namespace Starwatch.Starbound
             }, new Dictionary<string, object>() { { "id", Server.Id } });
 
             //Add the accounts
-            Logger.Log("Exporting Accounts");
+            Logger.Log("- Exporting Accounts");
             var accounts = await Account.LoadAllActiveAsync(DbContext);
             settings.ServerUsers.SetAccounts(accounts);
             
             //Add the bans
-            Logger.Log("Exporting Bans");
+            Logger.Log("- Exporting Bans");
             var bans = await Ban.LoadAllAsync(DbContext, false);
             settings.AddBanRange(bans);
+
+            Logger.Log("- Done. Took " + stopwatch.ElapsedMilliseconds);
 
             //Return the settings
             return settings;
@@ -199,22 +204,25 @@ namespace Starwatch.Starbound
         /// <returns></returns>
         public async Task ImportSettingsAsync(string filepath)
         {
+            //Start a timer
+            var stopwatch = Stopwatch.StartNew();
+
             Logger.Log("Importing " + filepath);
             string settingContents = File.ReadAllText(filepath);
             var settings = JsonConvert.DeserializeObject<Settings>(settingContents, new Serializer.UserAccountsSerializer());
 
             //Save all the bans
-            Logger.Log("- Importing Bans");
+            Logger.Log("- Importing Bans @ " + stopwatch.ElapsedMilliseconds);
             foreach (Ban b in settings.GetBansEnumerable())
                 await b.SaveAsync(DbContext);
 
             //Save all the accounts
-            Logger.Log("- Importing Accounts");
+            Logger.Log("- Importing Accounts @ " + stopwatch.ElapsedMilliseconds);
             foreach (Account a in settings.ServerUsers.Accounts.Values)
                 await a.SaveAsync(DbContext);
 
             //Serialize into a jobj
-            Logger.Log("- Importing Settings");
+            Logger.Log("- Importing Settings @ " + stopwatch.ElapsedMilliseconds);
             var jobj = JObject.FromObject(settings);
             jobj.Remove("serverUsers");
             jobj.Remove("bannedIPs");
@@ -240,8 +248,7 @@ namespace Starwatch.Starbound
 
             //Insert the data
             _ = await DbContext.InsertUpdateAsync("!servers", data);
-
-            Logger.Log("- Done");
+            Logger.Log("- Finished. Took " + stopwatch.ElapsedMilliseconds);
         }
 
         #region Bans

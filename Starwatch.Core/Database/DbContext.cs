@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Starwatch.Util;
 using System.Threading;
+using System.IO;
 
 namespace Starwatch.Database
 {
@@ -18,7 +19,7 @@ namespace Starwatch.Database
         public Logger Logger { get; }
 
         public DateTime LastStatementPreparedAt { get; private set; }
-        
+
         //TODO: Make a pool of connections, one for each thread
         private MySqlConnection _connection;
         private MySqlCommand _command;
@@ -134,7 +135,7 @@ namespace Starwatch.Database
         /// <param name="callback"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
-       
+
         public async Task<List<T>> ExecuteAsync<T>(string query, Func<DbDataReader, T> callback, Dictionary<string, object> arguments = null)
         {
             //Create the command & prepare the list
@@ -245,7 +246,7 @@ namespace Starwatch.Database
 
             if (condition != null && condition.Count > 0)
                 qb.Append(" WHERE ").Append(string.Join(" AND ", condition.Select(kp => kp.Key + "=?" + kp.Key)));
-            
+
             if (limit.HasValue)
             {
                 qb.Append(" LIMIT " + limit.Value);
@@ -284,7 +285,7 @@ namespace Starwatch.Database
 
             string query = qb.ToString();
             var cmd = await CreateCommandAsync(query, columns);
-            
+
             try
             {
                 if (cmd == null) return 0;
@@ -328,7 +329,6 @@ namespace Starwatch.Database
             }
         }
 
-
         /// <summary>
         /// Creates a command with arguments
         /// </summary>
@@ -345,7 +345,10 @@ namespace Starwatch.Database
             if (!await OpenAsync()) return null;
 
             //Wait for the semephore
+            //Logger.Log("Creating Command, Waiting Semaphore.. {0}", _semaphore.CurrentCount);
             await _semaphore.WaitAsync();
+
+            //Logger.Log("[+] {0}", query.Substring(0, Math.Min(query.Length, 50)));
 
             //Validate the command is empty
             if (_command != null)
@@ -401,6 +404,7 @@ namespace Starwatch.Database
             }
 
             _semaphore.Release();
+            //Logger.Log("[-] released");
         }
 
 
@@ -412,13 +416,15 @@ namespace Starwatch.Database
         {
             try
             {
+                //Logger.Log("[c] Attempting Connection...");
+
                 //Wait for our turn
                 await _semaphore.WaitAsync();
 
                 if (IsConnected)
                     return true;
 
-                Logger.Log("Attempting Connection...");
+                Logger.Log("[c] Opening Connection");
                 await _connection.OpenAsync();
                 IsConnected = true;
                 return true;
@@ -435,7 +441,7 @@ namespace Starwatch.Database
                 _semaphore.Release();
             }
         }
-      
+
         /// <summary>
         /// Closes the database
         /// </summary>
@@ -477,5 +483,51 @@ namespace Starwatch.Database
         /// Disposes the connection
         /// </summary>
         public void Dispose() { DisposeConnection(); }
+
+        /// <summary>
+        /// Imports a SQL export from phpMyAdmin
+        /// </summary>
+        /// <param name="filepath"></param>
+        /// <param name="replacePrefix"></param>
+        /// <returns></returns>
+        public async Task ImportSqlAsync(string filepath, bool replacePrefix = true)
+        {
+            if (!File.Exists(filepath))
+                throw new FileNotFoundException("The file was not found", filepath);
+
+            //Generate the big long statement
+            string[] lines = File.ReadAllLines(filepath);
+            StringBuilder builder = new StringBuilder();
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("--") || line.StartsWith("/*") || line.EndsWith("*/"))
+                    continue;
+
+                builder.Append(!replacePrefix ? line : line.Replace("sb_", this.Settings.Prefix));
+            }
+
+            //Prepare the queries
+            string[] queries = builder.ToString().Split(';');
+            foreach (var q in queries)
+            {
+                if (string.IsNullOrWhiteSpace(q)) continue;
+
+                try
+                {
+                    var cmd = await CreateCommand(q);
+                    await cmd.ExecuteScalarAsync();
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "Import Failure!");
+                    break;
+                }
+                finally
+                {
+                    ReleaseCommand();
+                }
+            }
+        }
+
     }
 }

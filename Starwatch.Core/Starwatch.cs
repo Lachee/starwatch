@@ -50,9 +50,13 @@ namespace Starwatch
                         Database = "starwatch",
                         Username = "root",
                         Password = "rootpass",
-                        Prefix = "sb_"
+                        Prefix = "sb_",
+                        DefaultImport = "Resources/starwatch.sql"
                     });
                     DbContext = new DbContext(settings, Logger.Child("SQL"));
+
+                    if (!string.IsNullOrWhiteSpace(settings.DefaultImport))
+                        await DbContext.ImportSqlAsync(settings.DefaultImport);
                 }
                 
                 //Initialize the API first

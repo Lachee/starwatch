@@ -68,12 +68,20 @@ namespace Starwatch
                         case "import":
                             var plevel = Starwatch.Logger.Level;
                             Starwatch.Logger.Level = Logging.Logger.LogLevel.None;
-                            Console.WriteLine("Are you sure? [y/n]: ");
-                            if (Console.ReadLine().StartsWith("y"))
+                            Console.WriteLine("Import Filepath [y/n]: ");
+                            string importFilepath = Console.ReadLine();
+                            if (!string.IsNullOrWhiteSpace(importFilepath))
                             {
-                                Console.WriteLine("Triggering Import...");
-                                Starwatch.Logger.Level = plevel;
-                                Starwatch?.Server?.Configurator?.ImportSettingsAsync(Starwatch?.Server?.ConfigurationFile).Wait();
+                                if (File.Exists(importFilepath))
+                                {
+                                    Console.WriteLine("Triggering Import...");
+                                    Starwatch.Logger.Level = plevel;
+                                    Starwatch?.Server?.Configurator?.ImportSettingsAsync(importFilepath).Wait();
+                                }
+                                else
+                                {
+                                    Console.WriteLine("File " + importFilepath + " does not exist.");
+                                }
                             }
                             Starwatch.Logger.Level = plevel;
                             Console.WriteLine("Done");

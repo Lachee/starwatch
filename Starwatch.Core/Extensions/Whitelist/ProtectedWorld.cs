@@ -34,7 +34,7 @@ namespace Starwatch.Extensions.Whitelist
         /// <summary>
         /// Whereami Location of the world
         /// </summary>
-        public string Whereami { get => World.Whereami; set => World = World.Parse(Whereami); }
+        public string Whereami { get => World?.Whereami; set => World = World.Parse(value); }
 
         /// <summary>
         /// Allow anonymous connections?

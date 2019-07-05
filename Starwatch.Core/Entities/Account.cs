@@ -64,7 +64,10 @@ namespace Starwatch.Entities
 
         public static async Task<List<Account>> LoadAllActiveAsync(DbContext db)
         {
-            return await db.SelectAsync<Account>("!accounts", (reader) => FromDbDataReader(db, reader), new Dictionary<string, object>() { { "server", 1 } });
+            return await db.SelectAsync<Account>("!accounts", (reader) => FromDbDataReader(db, reader), new Dictionary<string, object>() {
+                ["server"] = 1,
+                ["is_active"] = true
+            });
         }
 
         private static Account FromDbDataReader(DbContext db, DbDataReader reader)

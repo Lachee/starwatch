@@ -93,7 +93,11 @@ namespace Starwatch.API.Rest.Route
                 }
             });
 
+            //If we are async, return instantly
+            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
+
             //Return the newly added route
+            task.Wait();
             return OnGet(query);
         }
 

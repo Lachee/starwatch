@@ -17,7 +17,7 @@ namespace Starwatch.Starbound
     public class Connections : Monitoring.Monitor
     {
         public static readonly bool ENFORCE_STRICT_NAMES = true;
-        private static readonly Regex regexLoggedMsg = new Regex(@"''(.*)'' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
+        private static readonly Regex regexLoggedMsg = new Regex(@"'(.*)' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
         private static readonly Regex regexClientMsg = new Regex(@"'(.*)' <(\d+)> \(([a-zA-Z0-9.:]*)\) (connected|disconnected)( for reason: (.*))?", RegexOptions.Compiled);
 
         /// <summary>
@@ -146,14 +146,15 @@ namespace Starwatch.Starbound
                     string address = match.Groups[3].Value;
 
                     //Do some trimming of the accounts
-                    if (account.Equals("<anonymous>")) account = null; else account = account.Substring(1, account.Length - 2);
+                    if (account.Equals("<anonymous>")) account = null;
+                    else account = account.Substring(1, account.Length - 2);
 
                     //Add to the pending connections
                     _pending.Add(new PendingPlayer() {
                         address = address,
                         account = account,
                         character = character
-                    });                    
+                    });
                 }
                 else
                 {
@@ -195,6 +196,7 @@ namespace Starwatch.Starbound
                                 IP = pending.address
                             };
 
+                            //Add to the connections
                             _connections.Add(connection, player);
                             await CreateSessionAsync(player);
 
@@ -508,14 +510,14 @@ namespace Starwatch.Starbound
             if (player.Username.Contains('<')) containsIllegalCharacters = true;
             if (player.Username.Contains(')')) containsIllegalCharacters = true;
             if (player.Username.Contains('(')) containsIllegalCharacters = true;
-            if (player.Username.Contains("Lachee") && player.AccountName.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
+            if (player.Username.Contains("Lachee") && player.AccountName?.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
             if (containsIllegalCharacters)
             {
                 await Server.Kick(player.Connection, "Character name contains illegal characters.");
             }
 
             //Make sure no duplicate names
-            if (_connections.Where(c => c.Value.Username.Equals(player.Username) && c.Value.Connection != player.Connection).Any())
+            if (_connections.Any(kp => kp.Value.Username.Equals(player.Username) && kp.Key != player.Connection))
             {
                 await Server.Kick(player.Connection, "Character with the same name already exists on the server.");
             }
