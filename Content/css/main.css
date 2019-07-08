@@ -23,7 +23,7 @@
 	--panel-background: rgb(32, 32, 32);
     --panel-background-odd: rgb(22, 22, 22);
     
-    --right-width: 800px;
+    --right-width: 860px;
 }
 
 body
@@ -56,9 +56,6 @@ button
 {
     float: right;
 }
-
-tr.strikeout  { border: 1px solid red; text-decoration-line: line-through; }
-tr.highlight  { border: 1px solid gold; }
 
 .panel
 {
@@ -114,12 +111,18 @@ tr.highlight  { border: 1px solid gold; }
 }
 
 .playerlist {  overflow:hidden; border-collapse: collapse; color: white; font-family: monospace; }
-.playerlist td { text-align: center; padding: 5px; }
+.playerlist td { text-align: center; padding: 3px; }
+.playerlist tr { border: 1px solid transparent; }
 .playerlist tr:nth-child(odd) { background: var(--panel-background); }
 
 .playerlist td span {
     display: block;
 }
+
+
+tr.strikeout  { border: 1px solid red; text-decoration-line: line-through; }
+tr.highlight  {border-bottom: 1px solid gold !important;background: var(--ansi-black) !important;}
+
 
 .playerlist td#connection { width: 50px; }
 .playerlist td#location { width: 180px; }
@@ -132,7 +135,7 @@ tr.highlight  { border: 1px solid gold; }
     color: var(--ansi-cyan);
 }
 .players {
-    height: calc(100% - 460px);
+    height: calc(100% - 250px);
     overflow-y: auto;
 }
 
@@ -144,3 +147,27 @@ input#timeout {
     margin-top: 10px;
     width: 100%;
 }
+
+button 
+{
+    border: none;
+    outline: none;
+    color: white;
+    background: none;
+    border-bottom: 1px solid var(--ansi-black);
+}
+button:hover
+{
+    color: white;
+    background: var(--ansi-black);
+    border-bottom: 1px solid var(--ansi-white);
+}
+
+button:focus { outline: none; }
+.button-off {}
+.button-on 
+{
+    border-bottom: 1px solid var(--ansi-red);
+}
+
+.log td.author.highlight {background: var(--ansi-black);}

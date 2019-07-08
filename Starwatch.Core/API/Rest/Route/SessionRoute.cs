@@ -11,24 +11,25 @@ namespace Starwatch.API.Rest.Route
     [Route("/session", AuthLevel.Admin)]
     class SessionRoute : RestRoute
     {
+        //TODO: Implement Deep Analyisis
         public SessionRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
         public override RestResponse OnGet(Query query)
         {
             Dictionary<string, object> parameters = new Dictionary<string, object>();
             if (query.TryGetValue("username", out var username))
             {
-                parameters.Add("username", username);
-                parameters.Add("username_clean", username);
+                parameters.Add("username",      $"%{username}%");
+                parameters.Add("username_clean", $"%{username}%");
             }
 
             if (query.TryGetValue("account", out var account))
-                parameters.Add("account", account);
+                parameters.Add("account", $"%{account}%");
 
             if (query.TryGetValue("ip", out var ip))
                 parameters.Add("ip", ip);
 
             if (query.TryGetValue("uuid", out var uuid))
-                parameters.Add("uuid", uuid);
+                parameters.Add("uuid", $"%{uuid}%");
 
             if (query.TryGetValue("connection", out var connection))
                 parameters.Add("cid", connection);

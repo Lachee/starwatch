@@ -16,7 +16,7 @@ namespace Starwatch.Entities
         public string UUID { get; internal set; }
         public string IP { get; internal set; }
         public bool IsAnonymous => string.IsNullOrWhiteSpace(AccountName) || AccountName.Equals(Account.Annonymous);
-
+        public bool IsAdmin { get; internal set; }
         //public bool IsAdmin { get { return (Server?.Settings?.Accounts.GetAccount(AccountName)?.IsAdmin).GetValueOrDefault(false); } }
 
         [JsonIgnore]

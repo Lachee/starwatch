@@ -140,9 +140,9 @@ namespace Starwatch.Starbound
             var arguments = new Dictionary<string, object>(parameters);
 
             //Prepare the condition string and the query
-            string condition = string.Join($" {mode} ", arguments.Keys.Select(k => k + " LIKE ?" + k));
+            string condition = string.Join($" {mode} ", arguments.Keys.Select(k => k + " LIKE ?" + k ));
             string query = $"SELECT * FROM !sessions WHERE {condition}";
-
+                        
             //Add the date filter
             if (duration.HasValue)
             {

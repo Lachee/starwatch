@@ -206,6 +206,7 @@ namespace Starwatch.Starbound
                                 var account = await player.GetAccountAsync();
                                 if (account != null)
                                 {
+                                    player.IsAdmin = account.IsAdmin;
                                     account.UpdateLastSeen();
                                     await account.SaveAsync(Server.DbContext);
                                 }

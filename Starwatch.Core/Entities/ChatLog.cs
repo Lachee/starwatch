@@ -16,7 +16,6 @@ namespace Starwatch.Entities
         public Server Server { get; }
 
         public long Id { get; set; }
-        public long UptimeId { get; set; }
 
         public TaggedText Content { get; private set; }
         public string TaggedContent => Content?.TaggedContent;
@@ -32,14 +31,13 @@ namespace Starwatch.Entities
             Content = null;
             Session = null;
             Created = DateTime.UtcNow;
-            UptimeId = 0;
         }
 
         public ChatLog(Server server) : this()
         {
             Server = server;
-            if (server.TryGetMonitor<UptimeMonitor>(out var m))
-                UptimeId = m.CurrentUptimeId;
+            //if (server.TryGetMonitor<UptimeMonitor>(out var m))
+            //    UptimeId = m.CurrentUptimeId;
         }
 
         public ChatLog(Message message) : this(message.Server)
@@ -62,8 +60,7 @@ namespace Starwatch.Entities
                     Content = reader.GetString("content"),
                     Session = new Session(Server, reader.GetInt64("session")),
                     Location = reader.GetString("location"),
-                    Created = reader.GetDateTime("date_created"),
-                    UptimeId = reader.GetInt64("uptime")
+                    Created = reader.GetDateTime("date_created")
                 };
             }, new Dictionary<string, object>() { { "id", Id } });
 
@@ -75,7 +72,6 @@ namespace Starwatch.Entities
             Session = log.Session;
             Location = log.Location;
             Created = log.Created;
-            UptimeId = log.UptimeId;
             Session = log.Session;
 
             if (Session != null)
@@ -91,8 +87,7 @@ namespace Starwatch.Entities
                 { "session", Session.Id },
                 { "content", TaggedContent },
                 { "content_clean", Content.ToString() },
-                { "location", Location },
-                { "uptime", UptimeId }
+                { "location", Location }
             };
 
             if (Id > 0) data.Add("id", Id);

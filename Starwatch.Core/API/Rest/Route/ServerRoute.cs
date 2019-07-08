@@ -40,6 +40,7 @@ namespace Starwatch.API.Rest.Route
             Payload payload = (Payload)payloadObject;
             bool reload = query.GetBool("reload", true);
             bool async = query.GetBool(Query.AsyncKey, false);
+            bool includeAll = query.GetBool("full", false);
 
             if (payload.AllowAnonymousConnections.HasValue) Handler.Starbound.Configurator.AllowAnonymousConnections = payload.AllowAnonymousConnections.Value;
             if (payload.AllowAssetsMismatch.HasValue) Handler.Starbound.Configurator.AllowAssetsMismatch = payload.AllowAssetsMismatch.Value;
@@ -51,15 +52,16 @@ namespace Starwatch.API.Rest.Route
             { 
                 var task = Handler.Starbound.SaveConfigurationAsync(true);
                 if (async) return RestResponse.Async;
-                return new RestResponse(RestStatus.OK, res: task.Result ? GetCulledServerSettings(false) : null);
+                return new RestResponse(RestStatus.OK, res: task.Result ? GetCulledServerSettings(false, includeAll: includeAll) : null);
             }
 
-            return new RestResponse(RestStatus.OK, res: GetCulledServerSettings());
+            return new RestResponse(RestStatus.OK, res: GetCulledServerSettings(true, includeAll: includeAll));
         }
 
         public override RestResponse OnGet(Query query)
         {
-            var settings = GetCulledServerSettings();
+            bool includeAll = query.GetBool("full", false);
+            var settings = GetCulledServerSettings(false, includeAll: includeAll);
             return new RestResponse(RestStatus.OK, res: settings);
         }
         public override RestResponse OnDelete(Query query)
@@ -71,7 +73,7 @@ namespace Starwatch.API.Rest.Route
 
             //Delete the server and wait for it.
             bool async = query.GetBool(Query.AsyncKey, false);
-            var task = Handler.Starbound.Terminate(query.GetString("reason", "REST Shutdown by " + Authentication.Identity));
+            var task = Handler.Starbound.Terminate(query.GetString("reason", "REST Shutdown by " + Authentication.ToString()));
             if (async) return RestResponse.Async;
 
             //Wait for the termination and continue
@@ -80,7 +82,7 @@ namespace Starwatch.API.Rest.Route
         }
 
 
-        public JObject GetCulledServerSettings(bool requireSave = true)
+        public JObject GetCulledServerSettings(bool requireSave = true, bool includeAll = false)
         {
 
             if (AuthenticationLevel < AuthLevel.Admin)
@@ -88,12 +90,7 @@ namespace Starwatch.API.Rest.Route
                 //Less than admin, return null;
                 return new JObject();
             }
-            else if (AuthenticationLevel <= AuthLevel.Bot)
-            {
-                //Admin, return the basics
-                return JObject.FromObject(Handler.Starbound.Configurator);
-            }
-            else
+            else if (AuthenticationLevel > AuthLevel.Bot && includeAll)
             {
                 //Save the configuration first, just in case
                 if (requireSave)
@@ -109,6 +106,9 @@ namespace Starwatch.API.Rest.Route
                 jobj.Remove("bannedUuids");
                 return jobj;
             }
+
+            //Admin, return the basics
+            return JObject.FromObject(Handler.Starbound.Configurator);
         }
     }
 }

@@ -576,11 +576,42 @@ namespace Starwatch.Starbound
                 }
 
                 Logger.Log("Reading Predefined Log");
-                Random random = new Random();
+                var isFirstLine = true;
+                var startingTimespan = TimeSpan.MinValue;
+                var startingStopwatch = Stopwatch.StartNew();
+
                 foreach (var line in File.ReadLines(SamplePath))
                 {
                     if (line.Length < 15) continue;
                     if (cancellationToken.IsCancellationRequested) break;
+
+                    var timestamp = "";
+                    var currentTimespan = startingTimespan;
+
+                    try
+                    {
+                        //Get the timespan, skip invalid lines.
+                        timestamp = line.Substring(1, 12);
+                        currentTimespan = TimeSpan.Parse(timestamp);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (isFirstLine)
+                    {
+                        isFirstLine = false;
+                        startingTimespan = currentTimespan;
+                    }
+
+                    //Difference between first and now
+                    var timespanDifference = currentTimespan - startingTimespan;
+                    var stopwatchDifference = (int)Math.Round(timespanDifference.TotalMilliseconds - startingStopwatch.ElapsedMilliseconds);
+
+                    //Wait a bit before processing hte line
+                    if (stopwatchDifference > 0)
+                        await Task.Delay(stopwatchDifference, cancellationToken);
 
                     //Process the read line
                     _terminate = await ProcessLine(line.Substring(15));
@@ -589,7 +620,7 @@ namespace Starwatch.Starbound
                     if (_terminate) break;
 
                     //Wait a bit
-                    await Task.Delay(random.Next(SampleMinDelay, SampleMaxDelay));
+                    //await Task.Delay(random.Next(SampleMinDelay, SampleMaxDelay));
                 }
                 Logger.Log("Finished reading prefined log");
                 #endregion
