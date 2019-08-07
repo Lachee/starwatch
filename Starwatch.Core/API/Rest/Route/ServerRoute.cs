@@ -75,7 +75,7 @@ namespace Starwatch.API.Rest.Route
             bool async = query.GetBool(Query.AsyncKey, false);
             var task = Handler.Starbound.Terminate(query.GetString("reason", "REST Shutdown by " + Authentication.ToString()));
             if (async) return RestResponse.Async;
-
+            
             //Wait for the termination and continue
             task.Wait();
             return new RestResponse(RestStatus.OK);

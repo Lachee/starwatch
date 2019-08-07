@@ -20,7 +20,7 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             if (World is CelestialWorld celesial && celesial.Details == null)
-                try { celesial.LoadDetailsAsync(Starbound).Wait(); } catch (Exception) { }
+                try { celesial.GetDetailsAsync(Starbound).Wait(); } catch (Exception) { }
 
             return new RestResponse(RestStatus.OK, res: World);
         }

@@ -1,0 +1,104 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+<style>
+	#map {
+		width: 100%;
+		height: 100%;
+	}
+
+</style>
+</head>
+
+<body>
+	<div id="map">
+	</div>
+</body>
+
+<script>
+	var scale = 0.0000001
+
+//https://leafletjs.com/examples/crs-simple/crs-simple.html
+//https://github.com/Leaflet/Leaflet.markercluster#options
+	var yx = L.latLng;
+	var xy = function(x, y) {
+		if (L.Util.isArray(x)) {    // When doing xy([x, y]);
+			return yx(x[1], x[0]);
+		}
+		return yx(y, x);  // When doing xy(x, y);
+	};
+
+	var map = L.map('map', {
+		crs: L.CRS.Simple,
+		minZoom: -3
+	});
+
+	var bounds = [[-26.5,-25], [1021.5,1023]];
+	//var image = L.imageOverlay('uqm_map_full.png', bounds).addTo(map);
+
+
+	map.setView( [70, 120], 1);
+	getWorlds(map, scale);
+	function getWorlds(map, scale = 1)
+	{
+		const Http = new XMLHttpRequest();
+		const url='http://localhost:8000/api/world/search?systems';
+		Http.open("GET", url);
+		Http.send();
+
+		Http.onreadystatechange = (e) => {
+			if (Http.readyState == 4 && Http.status == 200)
+			{
+				var response = JSON.parse(Http.responseText);
+				console.log(response.Response);
+				for(var key in response.Response)
+				{
+					var world = response.Response[key][0];
+					var coord = xy(world.X * scale, world.Y * scale);
+					L.marker(coord).addTo(map).bindPopup(world.Details.Name);
+					map.setView( coord, 10);
+					console.log(coord, key);
+				}
+			}
+		}
+	}
+	
+	function locatePlayer(map, connection)
+	{
+		const Http = new XMLHttpRequest();
+		const url='http://localhost:8000/api/player/' + connection + '?enforce=true';
+		Http.open("GET", url);
+		Http.send();
+
+		Http.onreadystatechange = (e) => {
+			if (Http.readyState == 4 && Http.status == 200)
+			{
+				var response = JSON.parse(Http.responseText);
+				console.log(response.Response);
+				flyToCelestial(map, response.Response.Location);
+			}
+		}
+	}
+	
+	function flyToCelestial(map, celestial)
+	{
+		const Http = new XMLHttpRequest();
+		const url='http://localhost:8000/api/world/' + celestial;
+		Http.open("GET", url);
+		Http.send();
+
+		Http.onreadystatechange = (e) => {
+			if (Http.readyState == 4 && Http.status == 200)
+			{
+				var response = JSON.parse(Http.responseText);				
+				var world = response.Response;
+				var coord = xy(world.X * scale, world.Y * scale);
+				map.flyTo(coord, 4);
+			}
+		}
+	}
+
+</script>
+
+</html>

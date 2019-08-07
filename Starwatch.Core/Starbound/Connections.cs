@@ -14,7 +14,7 @@ namespace Starwatch.Starbound
     /// <summary>
     /// Handles a list of connections
     /// </summary>
-    public class Connections : Monitoring.Monitor
+    public class Connections : Monitoring.ConfigurableMonitor
     {
         public static readonly bool ENFORCE_STRICT_NAMES = true;
         private static readonly Regex regexLoggedMsg = new Regex(@"'(.*)' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
@@ -42,6 +42,11 @@ namespace Starwatch.Starbound
         /// <returns></returns>
         public Player this[int connection] => GetPlayer(connection);
 
+        /// <summary>
+        /// The IPv4 Validator
+        /// </summary>
+        public VPNValidator Validator { get; }
+
         private Dictionary<int, Player> _connections = new Dictionary<int, Player>();
         private Dictionary<int, Session> _sessions = new Dictionary<int, Session>();
         private List<PendingPlayer> _pending = new List<PendingPlayer>();
@@ -62,8 +67,21 @@ namespace Starwatch.Starbound
 
         private Timer _uuidTimer;
         
-        public Connections(Server server) : base (server, "CON")
+        public Connections(Server server) : base (server, "Connection")
         {
+            try
+            {
+                string filepath = Configuration.GetString("vpn_ipv4", "Resources/vpn-ipv4.txt");
+                Configuration.Save();
+
+                Validator = new VPNValidator();
+                Validator.Load(filepath);
+            }
+            catch(Exception e)
+            {
+                Logger.LogError(e, "Failed to create VPN Validator: {0}");
+                Validator = null;
+            }
         }
 
         #region Events
@@ -188,12 +206,28 @@ namespace Starwatch.Starbound
                             //Remove the account from the pending and create a new session
                             _pending.Remove(pending);
 
+                            //Try to check if the address is a VPN
+                            bool isVPN = false;
+                            try
+                            {
+                                if (Validator != null)
+                                {
+                                    Logger.Log("Checking IP for VPN: {0}", pending.address);
+                                    isVPN = Validator.Check(pending.address);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.LogError(e, "Failed to check address: {0}");
+                            }
+
                             //Create the player object
                             var player = new Player(Server, connection)
                             {
                                 AccountName = pending.account,
                                 Username = pending.character,
-                                IP = pending.address
+                                IP = pending.address,
+                                IsVPN = isVPN
                             };
 
                             //Add to the connections
@@ -216,6 +250,7 @@ namespace Starwatch.Starbound
                             try
                             {
                                 //Invoke the events. This shouldn't have to many listeners to this.
+                                Logger.Log("Player Connected: {0}", player);
                                 OnPlayerConnect?.Invoke(_connections[connection]);
 
                                 //Make sure they have a valid username
@@ -446,6 +481,7 @@ namespace Starwatch.Starbound
                 try
                 {
                     //Invoke the events. This shouldn't have to many listeners to this.
+                    Logger.Log("Player Connected Sneaky: {0}", player);
                     OnPlayerConnect?.Invoke(_connections[kp.Value.Connection]);
 
                     //Make sure they have a valid username

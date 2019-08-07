@@ -12,10 +12,12 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
 
+        <script type = "text/javascript" src = "js/random.js" ></script>
         <script type = "text/javascript" src = "js/ByteStream.js" ></script>
         <script type = "text/javascript" src = "js/sbname.js" ></script>
         <script type = "text/javascript" src = "js/starwatch.js" ></script>
 
+        <link rel="stylesheet" type="text/css" href="css/starbound.css">
         <link rel="stylesheet" type="text/css" href="css/main.css">
         <title>Starwatch Gateway</title>
     </head>
@@ -224,10 +226,10 @@
          
             var entry = $('<tr>', { "class": "log", "id": tag });
             var timeField = $('<td>', { "class": "time" });
-            var authorField = $('<td>', { "class": "author" });
+            var authorField = $('<td>', { "class": "author sbtext" });
             var contentField = $('<td>', { "class": "content"});
             timeField.text(moment().format("LTS"));
-            authorField.text(escapeStarboundTags(author));
+            authorField.html(formatStarboundTags(author));
             contentField.text(content);
 
             if (linkAuthor)
@@ -235,6 +237,8 @@
                 var player = null;
                 if (starwatch.players.some(function(p) { player = p; return p.Username == author; }))
                 {
+                    
+                    contentField.css('color', locationColor(player.Location));
                     authorField.attr("id", player.Connection);
                     authorField
                     .mouseenter(function() { setPlayerHighlight(player, true) })
@@ -305,7 +309,7 @@
             if (player == null) return;
             var entry = $('<tr>', { "class": "player context", "id": player.Connection });
             var connField = $('<td>', { "id": "connection" });
-            var nameField = $('<td>', { "id": "name" });
+            var nameField = $('<td>', { "id": "name", 'class': 'sbtext' });
             var accnField = $('<td>', { "id": "account" });
             var locaField = $('<td>', { "id": "location" });
             var uuidField = $('<td>', { "id": "ID" });
@@ -334,7 +338,8 @@
             var selector = "#" + player.Connection + ".player ";
             var parent = $(selector);
 
-            parent.children("#location").text(player.Location == null ? "-" : player.Location);
+            parent.children("#location").text(player.Location == null ? "-" : player.Location)
+            parent.children("#location").css('color',  locationColor(player.Location));
             
             if (player.Nickname != null) parent.children("#name").html("<span id='top'>" + formatStarboundTags(player.Nickname) + "</span><span id='bottom'>" + escapeStarboundTags(player.Username) + "</span>");
             else parent.children("#name").html(formatStarboundTags(player.Username));
@@ -444,7 +449,7 @@
                     playerchart.data.datasets[0].data = [
                         players,
                         admins,
-                        max - players - admins
+                        max - (players + admins)
                     ];
                 }
                    

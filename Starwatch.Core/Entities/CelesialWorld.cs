@@ -15,7 +15,7 @@ namespace Starwatch.Entities
     public partial class CelestialWorld
     {
         /// <summary>
-        /// The details of the world. This will be null until <see cref="LoadDetailsAsync"/> caches it.
+        /// The details of the world. This will be null until <see cref="GetDetailsAsync"/> caches it.
         /// </summary>
         public Metadata Details { get; private set; }
 
@@ -228,6 +228,7 @@ namespace Starwatch.Entities
             //Create the metadata and read from jobj
             Details = new Metadata(this);
             Details.LoadJObject(jobj);
+            await Details.SaveAsync(db ?? server.DbContext);
 
             //Return the details
             return Details;
@@ -238,8 +239,9 @@ namespace Starwatch.Entities
         /// </summary>
         /// <param name="server"></param>
         /// <param name="db"></param>
+        /// <param name="save">Save the world to the database if it is created.</param>
         /// <returns></returns>
-        public async Task<Metadata> LoadDetailsAsync(Server server, DbContext db = null)
+        public async Task<Metadata> GetDetailsAsync(Server server, DbContext db = null)
         {
             //Prepare the details
             Details = new Metadata(this);
@@ -249,8 +251,7 @@ namespace Starwatch.Entities
             {
                 try
                 {
-                    Details = await CreateDetailsAsync(server, db);
-                    await Details.SaveAsync(db ?? server.DbContext);
+                    Details = await CreateDetailsAsync(server, db ?? server.DbContext);
                 }
                 catch (Exception)
                 {

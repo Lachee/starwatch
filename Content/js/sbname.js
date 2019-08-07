@@ -51,7 +51,7 @@ function escapeStarboundTags(name) {
 /**
 *	Converts a starbound formatted name into HTML. Colours, Shadows and Resets are supported and included.	
 */
-function formatStarboundTags(name) {
+function formatStarboundTags(name, shadowClass = null) {
 	
 	//Make sure we have a name
 	if (name == null) return "";
@@ -105,8 +105,9 @@ function formatStarboundTags(name) {
 				replace_close = "</span>";
 				break;
 				
-			case "shadow":			
-				replace = "<span style='text-shadow: 0px 1px black, 0px 2px black'>";
+            case "shadow":	
+                if (shadowClass == null) replace = "<span id='shadow' style='text-shadow: 0px 1px black, 0px 2px black'>";
+                else  replace = "<span class='shadow'>";
 				replace_close = "";
 				break;
 				
@@ -145,7 +146,7 @@ function formatStarboundTags(name) {
 	html_name = closeTags(html_name);	
 	
 	//Incase it in the approparite span
-	html_name = "<span class='starboundtext'>" + html_name + "</span>";
+	html_name = "<span class='sbtext'>" + html_name + "</span>";
 	
 	//Trim it
 	html_name = html_name.trim();

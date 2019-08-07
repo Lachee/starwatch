@@ -20,8 +20,8 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             var players = Starbound.Connections.GetPlayersEnumerator()
-                .Where(p => p.Location.Equals(World))
-                .ToDictionary(p => (p.Connection, p.Username));
+                .Where(p => p.Location != null && p.Location.Equals(World))
+                .ToDictionary(p => p.Connection, p => p.Username);
             return new RestResponse(RestStatus.OK, res: players);
         }        
     }

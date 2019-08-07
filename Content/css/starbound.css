@@ -1,0 +1,16 @@
+@font-face 
+{
+    font-family: "Starbound";
+    src: url(../fonts/hobo.ttf);
+    font-size: 9pt;
+}
+
+.sbtext
+{
+    font-family: 'Starbound';
+    font-size: 9pt;
+}
+.sbtext span 
+{ 
+    display: inline !important;
+}

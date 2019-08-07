@@ -125,8 +125,8 @@ tr.highlight  {border-bottom: 1px solid gold !important;background: var(--ansi-b
 
 
 .playerlist td#connection { width: 50px; }
-.playerlist td#location { width: 180px; }
-.playerlist td#ID { width: 200px; }
+.playerlist td#location { width: 180px; text-align: right; font-size: 9pt; }
+.playerlist td#ID { width: 200px; text-align: left; }
 .playerlist td span#top {}
 .playerlist td span#bottom {
     color: gray;
@@ -138,11 +138,6 @@ tr.highlight  {border-bottom: 1px solid gold !important;background: var(--ansi-b
     height: calc(100% - 250px);
     overflow-y: auto;
 }
-
-.starboundtext span {
-    display: inline !important;
-}
-
 input#timeout {
     margin-top: 10px;
     width: 100%;

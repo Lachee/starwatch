@@ -104,7 +104,7 @@ namespace Starwatch
                                 //Save the world
                                 try
                                 {
-                                    world.LoadDetailsAsync(Starwatch.Server).Wait();
+                                    world.GetDetailsAsync(Starwatch.Server).Wait();
                                     Console.WriteLine(" = " + world.Details?.Name);
                                 }
                                 catch (Exception e)

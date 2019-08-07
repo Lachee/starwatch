@@ -287,6 +287,7 @@ namespace Starwatch.Util
                 throw e;
             }
         }
+
         /// <summary>
         /// Try to get a string. Will throw exceptions if the value does not exist or is not a string.
         /// </summary>

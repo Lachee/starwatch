@@ -31,6 +31,7 @@ namespace Starwatch.Starbound
         public string UUID => Player.UUID;
         public string Username => Player.Username;
         public string Account => Player.AccountName;
+        public bool IsVPN => Player.IsVPN;
         
         public DateTime ConnectedAt { get; set; }
         public DateTime? DisconnectedAt { get; set; }
@@ -72,6 +73,7 @@ namespace Starwatch.Starbound
                 UUID = reader.GetString("uuid"),
                 Username = reader.GetString("username"),
                 AccountName = reader.GetString("account"),
+                IsVPN = reader.GetBoolean("vpn")
             };
 
             //Build the session
@@ -95,7 +97,8 @@ namespace Starwatch.Starbound
                 { "username_clean", new TaggedText(Player.Username).Content },
                 { "account", Player.AccountName },
                 { "date_joined", ConnectedAt },
-                { "uptime", UptimeId }
+                { "uptime", UptimeId },
+                { "vpn", IsVPN }
             };
 
             if (DisconnectedAt.HasValue)
