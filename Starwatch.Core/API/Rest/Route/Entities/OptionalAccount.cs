@@ -9,6 +9,7 @@ namespace Starwatch.API.Rest.Route.Entities
     {
         public string Name { get; set; }
         public bool? IsAdmin { get; set; }
+        public bool? IsActive { get; set; }
         public string Password { get; set; }
 
         public AccountPatch(Account account)
@@ -16,6 +17,7 @@ namespace Starwatch.API.Rest.Route.Entities
             Name = account.Name;
             IsAdmin = account.IsAdmin;
             Password = account.Password;
+            IsActive = account.IsActive;
         }
 
         public Account ToAccount()
@@ -23,6 +25,7 @@ namespace Starwatch.API.Rest.Route.Entities
             return new Account(Name)
             {
                 IsAdmin = IsAdmin.GetValueOrDefault(false),
+                IsActive = IsActive.GetValueOrDefault(true),
                 Password = Password
             };
         }

@@ -86,7 +86,8 @@ namespace Starwatch.API.Rest.Route
             string username = oa.Name ?? Account.Name;
             string password = oa.Password ?? Account.Password;
             bool isAdmin = oa.IsAdmin ?? Account.IsAdmin;
-  
+            bool isActive = oa.IsActive ?? Account.IsActive;
+
             //Prepare the task
             var task = Task.Run(async () =>
             {
@@ -103,7 +104,8 @@ namespace Starwatch.API.Rest.Route
                     Account = new Account(username)
                     {
                         IsAdmin = isAdmin,
-                        Password = password
+                        Password = password,
+                        IsActive = isActive
                     };
 
                 }
@@ -111,7 +113,8 @@ namespace Starwatch.API.Rest.Route
                 {
                     //Edit the individual parts of the account
                     Account.Password = password;
-                    Account.IsAdmin = isAdmin;     
+                    Account.IsAdmin = isAdmin;
+                    Account.IsActive = isActive;
                 }
 
                 //Set the account                
