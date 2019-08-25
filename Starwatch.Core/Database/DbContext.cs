@@ -23,7 +23,7 @@ namespace Starwatch.Database
         //TODO: Make a pool of connections, one for each thread
         private MySqlConnection _connection;
         private MySqlCommand _command;
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         //TODO: Fix the threading issues.
         private DropoutStack<PreviousQuery> _previousQueries = new DropoutStack<PreviousQuery>(10);
@@ -39,7 +39,6 @@ namespace Starwatch.Database
         {
             this.Logger = logger ?? new Logger("SQL");
             this.Settings = settings;
-            _connection = new MySqlConnection(this.Settings.ConnectionString);
         }
 
         /// <summary>
@@ -416,16 +415,30 @@ namespace Starwatch.Database
         {
             try
             {
-                //Logger.Log("[c] Attempting Connection...");
+                Logger.Log("[c] Attempting Connection...");
 
                 //Wait for our turn
                 await _semaphore.WaitAsync();
 
-                if (IsConnected)
-                    return true;
+                //Connection is not opened, so lets open it now.
+                if (_connection == null)
+                {
+                    //Disable our isconnected
+                    IsConnected = false;
 
-                Logger.Log("[c] Opening Connection");
+                    //Create the connection
+                    _connection = new MySqlConnection(this.Settings.ConnectionString);
+                    _connection.StateChange += async (sender, args) =>
+                    {
+                        //We have closed or broken, so lets close us.
+                        if (args.CurrentState == System.Data.ConnectionState.Closed || args.CurrentState == System.Data.ConnectionState.Broken)
+                            await this.CloseAsync();
+                    };
+                }
+
+                if (IsConnected) return true;
                 await _connection.OpenAsync();
+
                 IsConnected = true;
                 return true;
             }
@@ -438,24 +451,31 @@ namespace Starwatch.Database
             finally
             {
                 //We are done, and dont need our turn anymore.
+                Logger.Log("[c] State Changed");
                 _semaphore.Release();
             }
         }
 
         /// <summary>
-        /// Closes the database
+        /// Closes the database then disposes it.
         /// </summary>
         public async Task CloseAsync()
         {
             try
             {
+                //Close the connection asyncronously.
                 Logger.Log("Closing SQL");
                 await _connection.CloseAsync();
                 IsConnected = false;
             }
             catch (Exception e)
             {
+                //An error has occured while trying to close it.
                 Logger.LogError(e, "SQL Close Exception.");
+            }
+            finally
+            {
+                //Finally dispose of the connection.
                 DisposeConnection();
             }
         }
@@ -468,16 +488,20 @@ namespace Starwatch.Database
             Logger.Log("Disposing Connection...");
             if (_connection != null)
             {
+                //We are still apparently connected, force close it if we can.
+                // We don't care for errors because we will handle them later anyways.
                 if (IsConnected)
-                {
-                    _connection.Close();
-                    IsConnected = false;
-                }
+                    try { _connection.Close(); } catch (Exception) { }
 
+                //Dispose of the connection and set it to null.
                 _connection.Dispose();
                 _connection = null;
             }
+
+            //Set our flag
+            IsConnected = false;
         }
+
 
         /// <summary>
         /// Disposes the connection
@@ -494,6 +518,8 @@ namespace Starwatch.Database
         {
             if (!File.Exists(filepath))
                 throw new FileNotFoundException("The file was not found", filepath);
+
+#if ALLOW_IMPORT
 
             //Generate the big long statement
             string[] lines = File.ReadAllLines(filepath);
@@ -527,6 +553,9 @@ namespace Starwatch.Database
                     ReleaseCommand();
                 }
             }
+#else
+            await Task.CompletedTask;
+#endif
         }
 
     }
