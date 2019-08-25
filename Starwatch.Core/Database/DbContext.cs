@@ -23,7 +23,7 @@ namespace Starwatch.Database
         //TODO: Make a pool of connections, one for each thread
         private MySqlConnection _connection;
         private MySqlCommand _command;
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
 
         //TODO: Fix the threading issues.
         private DropoutStack<PreviousQuery> _previousQueries = new DropoutStack<PreviousQuery>(10);
