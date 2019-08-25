@@ -17,6 +17,6 @@ namespace Starwatch.Database
         public string DefaultImport { get; set; }
 
         [JsonIgnore]
-        public string ConnectionString => $"SERVER={Host};DATABASE={Database};USERNAME={Username};PASSWORD={Password};";
+        public string ConnectionString => $"Server={Host}; Port=3306; Database={Database}; Uid={Username}; Pwd={Password};";
     }
 }
