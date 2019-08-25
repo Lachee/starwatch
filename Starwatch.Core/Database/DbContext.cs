@@ -444,7 +444,7 @@ namespace Starwatch.Database
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "SQL Open Exception.");
+                Logger.LogError(e, "SQL Open Exception: " + e.Message);
                 await CloseAsync();
                 return false;
             }
