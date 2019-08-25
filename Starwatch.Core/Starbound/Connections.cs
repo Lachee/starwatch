@@ -99,13 +99,19 @@ namespace Starwatch.Starbound
                     {
                         Logger.Log("Nickname set for " + player + " to " + nickname);
                         _connections[player.Connection].Nickname = nickname;
-                        try
+
+                        //Validate the nickname
+                        if (!await EnforceCharacterName(player))
                         {
-                            OnPlayerUpdate?.Invoke(_connections[player.Connection]);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.LogError(e, "OnPlayerUpdate Exception - Nickname: {0}");
+                            try
+                            {
+                                //Invoke the change
+                                OnPlayerUpdate?.Invoke(_connections[player.Connection]);
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.LogError(e, "OnPlayerUpdate Exception - Nickname: {0}");
+                            }
                         }
                     }
                     else
@@ -533,32 +539,53 @@ namespace Starwatch.Starbound
             }
         }
 
-        private async Task EnforceCharacterName(Player player)
+        private async Task<bool> EnforceCharacterName(Player player)
         {
-            if (!ENFORCE_STRICT_NAMES) return;
+            if (!ENFORCE_STRICT_NAMES) return false;
             if (player == null)
             {
                 Logger.LogWarning("Trying to enforce the name of a null player!");
-                return;
+                return false;
             }
 
             bool containsIllegalCharacters = false;
-            if (player.Username.Contains('>')) containsIllegalCharacters = true;
-            if (player.Username.Contains('<')) containsIllegalCharacters = true;
-            if (player.Username.Contains(')')) containsIllegalCharacters = true;
-            if (player.Username.Contains('(')) containsIllegalCharacters = true;
+            if (!IsNameLegal(player.Username)) containsIllegalCharacters = true;
+            if (!IsNameLegal(player.Nickname)) containsIllegalCharacters = true;
             if (player.Username.Contains("Lachee") && player.AccountName?.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
+
+            //If they are illegal, t hen kick them.
             if (containsIllegalCharacters)
             {
-                await Server.Kick(player.Connection, "Character name contains illegal characters.");
+                await Server.Kick(player.Connection, "Character name contains illegal characters or strings.");
+                return true;
             }
 
             //Make sure no duplicate names
             if (_connections.Any(kp => kp.Value.Username.Equals(player.Username) && kp.Key != player.Connection))
             {
                 await Server.Kick(player.Connection, "Character with the same name already exists on the server.");
+                return true;
             }
+
+            return false;
         }
+
+        private static bool IsNameLegal(string name)
+        {
+            name = name.ToLowerInvariant();
+            if (name.Contains('>')) return false;
+            if (name.Contains('<')) return false;
+            if (name.Contains(')')) return false;
+            if (name.Contains('(')) return false;
+            if (name.Contains(':')) return false;
+
+            if (name.StartsWith("server")) return false;
+            if (name.StartsWith("chat")) return false;
+
+            string[] forbidden = new string[] { "server", "chat", "universe", "info", "warn", "err", "admin", "staff" };
+            return !forbidden.Contains(name);
+        }
+
         #endregion
 
         /// <summary>
