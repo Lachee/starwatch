@@ -190,19 +190,19 @@ namespace Starwatch.API
             {
                 default:
                 case AuthLevel.User:
-                    return 5;
+                    return 60;
 
                 case AuthLevel.Admin:
-                    return 20;
-
-                case AuthLevel.Bot:
                     return 120;
 
-                case AuthLevel.SuperBot:
+                case AuthLevel.Bot:
                     return 300;
 
+                case AuthLevel.SuperBot:
+                    return 500;
+
                 case AuthLevel.SuperUser:
-                    return 10000;
+                    return 100000;
             }
         }
 
