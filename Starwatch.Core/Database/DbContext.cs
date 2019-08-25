@@ -427,6 +427,7 @@ namespace Starwatch.Database
                     IsConnected = false;
 
                     //Create the connection
+                    Logger.Log("Creating new connection");
                     _connection = new MySqlConnection(this.Settings.ConnectionString);
                     _connection.StateChange += async (sender, args) =>
                     {
@@ -437,6 +438,8 @@ namespace Starwatch.Database
                 }
 
                 if (IsConnected) return true;
+
+                Logger.Log("Opening...");
                 await _connection.OpenAsync();
 
                 IsConnected = true;

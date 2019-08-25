@@ -16,7 +16,10 @@ namespace Starwatch.Database
 
         public string DefaultImport { get; set; }
 
+        public string ConnectionStringOverride { get; set; }
+
         [JsonIgnore]
-        public string ConnectionString => $"Server={Host}; Port=3306; Database={Database}; Uid={Username}; Pwd={Password};";
+        public string ConnectionString => !string.IsNullOrWhiteSpace(ConnectionStringOverride) ? 
+            ConnectionStringOverride :  $"Server={Host}; Port=3306; Database={Database}; Uid={Username}; Pwd={Password};";
     }
 }
