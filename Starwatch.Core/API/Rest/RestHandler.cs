@@ -224,7 +224,7 @@ namespace Starwatch.API.Rest
                 //Make sure we are allowed to access this with out current level
                 if (bestFactory.AuthenticationLevel > authentication.AuthLevel)
                 {
-                    Logger.LogError("Authentication is trying to access something that is above its level");
+                    Logger.LogError(authentication + " tried to access " + bestFactory.Route + " but it is above their authentication level.");
                     return new RestResponse(RestStatus.Forbidden, msg: "Route requires authorization level " + bestFactory.AuthenticationLevel.ToString());
                 }
 

@@ -24,8 +24,8 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnGet(Query query)
         {
-            if (!IsGateway && AuthenticationLevel < AuthLevel.SuperBot)
-                return RestResponse.Forbidden;
+            //if (!IsGateway && AuthenticationLevel < AuthLevel.SuperBot)
+            //    return RestResponse.Forbidden;
 
             var players = Starbound.Connections.GetPlayersEnumerator();
             return new RestResponse(RestStatus.OK, res: players.ToArray());
