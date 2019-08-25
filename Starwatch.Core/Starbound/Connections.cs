@@ -550,7 +550,7 @@ namespace Starwatch.Starbound
 
             bool containsIllegalCharacters = false;
             if (!IsNameLegal(player.Username)) containsIllegalCharacters = true;
-            if (!IsNameLegal(player.Nickname)) containsIllegalCharacters = true;
+            if (!string.IsNullOrEmpty(player.Nickname) && !IsNameLegal(player.Nickname)) containsIllegalCharacters = true;
             if (player.Username.Contains("Lachee") && player.AccountName?.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
 
             //If they are illegal, t hen kick them.
@@ -572,6 +572,8 @@ namespace Starwatch.Starbound
 
         private static bool IsNameLegal(string name)
         {
+            if (name == null) return true;
+
             name = name.ToLowerInvariant();
             if (name.Contains('>')) return false;
             if (name.Contains('<')) return false;
