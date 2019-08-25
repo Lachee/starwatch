@@ -325,14 +325,22 @@ namespace Starwatch.API
 
             //Clear all the services
             var serviceHost = HttpServer.WebSocketServices[GATEWAY_EVENT_SERVICE];
+            if (serviceHost == null) return;
+            if (serviceHost.Sessions == null) return;
+            if (serviceHost.Sessions.Sessions == null) return;
+
             foreach (var con in serviceHost.Sessions.Sessions.Select(s => s as GatewayConnection))
             {
+                if (con == null) continue;
                 if (con.Authentication == auth)
                     con.Terminate(closeStatusCode, reason);
             }
 
-            //Clear identification
-            _authentications.Remove(auth.Identity.Name);
+            if (auth != null && auth.Identity != null)
+            {
+                //Clear identification
+                _authentications.Remove(auth.Identity.Name);
+            }
         }
 
         /// <summary>
