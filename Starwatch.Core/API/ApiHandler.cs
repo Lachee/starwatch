@@ -182,6 +182,7 @@ namespace Starwatch.API
                 catch (Exception e)
                 {
                     //Internal error occured while trying to process the rest.
+                    Logger.LogError("Rest Handler failed: " + requestHandlers[i].GetType().ToString());
                     Logger.LogError(e, "Exception Occured Processing Request: {0}");
                     args.Response.WriteRest(new RestResponse(RestStatus.InternalError, e.Message, e.StackTrace));
                     return;

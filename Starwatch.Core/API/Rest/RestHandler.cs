@@ -119,7 +119,7 @@ namespace Starwatch.API.Rest
             
             //Make sure its valid type
             bool requiresContentType = method != RequestMethod.Get && method != RequestMethod.Delete;
-            string contentType = req.ContentType.Split(';')[0].Trim();
+            string contentType = (req.ContentType ?? "application/json").Split(';')[0].Trim();
             if (requiresContentType && contentType != ContentType.JSON && contentType != ContentType.FormUrlEncoded)
             {
                 Logger.LogError("BAD REQUEST: Invalid content type");

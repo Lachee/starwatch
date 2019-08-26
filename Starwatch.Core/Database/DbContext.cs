@@ -415,7 +415,7 @@ namespace Starwatch.Database
         {
             try
             {
-                Logger.Log("[c] Attempting Connection...");
+                //Logger.Log("[c] Attempting Connection...");
 
                 //Wait for our turn
                 await _semaphore.WaitAsync();
@@ -454,7 +454,7 @@ namespace Starwatch.Database
             finally
             {
                 //We are done, and dont need our turn anymore.
-                Logger.Log("[c] State Changed");
+                //Logger.Log("[c] State Changed");
                 _semaphore.Release();
             }
         }
