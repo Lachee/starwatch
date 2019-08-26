@@ -84,6 +84,7 @@ namespace Starwatch.Entities
             Reason = null;
             Moderator = null;
             ExpiryDate = null;
+            CreatedDate = DateTime.UtcNow;
         }
 
         /// <summary>
