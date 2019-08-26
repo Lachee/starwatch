@@ -64,6 +64,7 @@ namespace Starwatch.Entities
         {
             //Trim it a bit so its only the important data.
             filename = System.IO.Path.GetFileName(filename);
+            filename = filename.Replace(':', '_');
 
             //Check if its a instance world
             bool isInstance = filename.StartsWith("unique");
@@ -73,7 +74,7 @@ namespace Starwatch.Entities
             if (isInstance)
                 filename = filename.Replace("unique-", "InstanceWorld-");
             else
-                filename = "CelestialWorld_" + filename;
+                filename = filename.StartsWith("CelestialWorld_") ? filename : "CelestialWorld_" + filename;
 
             //Split the parts into subs
             string[] subs = filename.Split(isInstance ? '-' : '_');

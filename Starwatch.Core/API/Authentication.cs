@@ -193,7 +193,7 @@ namespace Starwatch.API
                     return 60;
 
                 case AuthLevel.Admin:
-                    return 120;
+                    return 240;
 
                 case AuthLevel.Bot:
                     return 300;

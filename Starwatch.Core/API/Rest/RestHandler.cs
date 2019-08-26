@@ -118,11 +118,12 @@ namespace Starwatch.API.Rest
             if (!CanHandleRequest(req)) return false;
             
             //Make sure its valid type
-            bool requireContentType = method != RequestMethod.Get && method != RequestMethod.Delete;
-            if (requireContentType && req.ContentType != ContentType.JSON && req.ContentType != ContentType.FormUrlEncoded)
+            bool requiresContentType = method != RequestMethod.Get && method != RequestMethod.Delete;
+            string contentType = req.ContentType.Split(';')[0].Trim();
+            if (requiresContentType && contentType != ContentType.JSON && contentType != ContentType.FormUrlEncoded)
             {
                 Logger.LogError("BAD REQUEST: Invalid content type");
-                res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: $"Invalid content type. Expected '{ContentType.JSON}' or '{ContentType.FormUrlEncoded}' but got '{req.ContentType}'"));
+                res.WriteRest(new RestResponse(RestStatus.BadRequest, msg: $"Invalid content type. Expected '{ContentType.JSON}' or '{ContentType.FormUrlEncoded}' but got '{contentType}'"));
                 return true;
             }
 
@@ -144,7 +145,7 @@ namespace Starwatch.API.Rest
             }
 
             //Get the response and write it back
-            var response = ExecuteRestRequest(method, req.Url.LocalPath, new Query(req), body, authentication, contentType: req.ContentType);
+            var response = ExecuteRestRequest(method, req.Url.LocalPath, new Query(req), body, authentication, contentType: contentType);
             res.WriteRest(response);
             return true;
         }
