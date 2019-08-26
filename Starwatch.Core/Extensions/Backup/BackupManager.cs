@@ -143,7 +143,7 @@ namespace Starwatch.Extensions.Backup
         {
             lock(_backupsLock)
             {
-                return _backups.Where(wb => wb.World.Equals(world)).FirstOrDefault(null);
+                return _backups.Where(wb => wb.World.Equals(world)).FirstOrDefault();
             }
         }
         
