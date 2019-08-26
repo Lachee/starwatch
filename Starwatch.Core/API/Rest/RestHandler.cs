@@ -308,7 +308,7 @@ namespace Starwatch.API.Rest
             {
                 Logger.LogError(e, "Exception occured while processing rest: {0}");
                 if (ReportExceptions)
-                    return new RestResponse(RestStatus.InternalError, e.Message, e);
+                    return new RestResponse(RestStatus.InternalError, e.Message, e.StackTrace);
 
                 return new RestResponse(RestStatus.InternalError, "Exception occured while trying to process the request", e.Message);
             }

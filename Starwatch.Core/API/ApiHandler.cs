@@ -182,7 +182,8 @@ namespace Starwatch.API
                 catch (Exception e)
                 {
                     //Internal error occured while trying to process the rest.
-                    args.Response.WriteRest(RestStatus.InternalError, e.Message);
+                    Logger.LogError(e, "Exception Occured Processing Request: {0}");
+                    args.Response.WriteRest(new RestResponse(RestStatus.InternalError, e.Message, e.StackTrace));
                     return;
                 }
             }
