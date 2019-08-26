@@ -57,6 +57,24 @@ namespace Starwatch.Extensions.Whitelist
         }
 
         /// <summary>
+        /// Reverse searches an account for all its protected worlds.
+        /// </summary>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<ProtectedWorld>> GetAccountProtectionsAsync(Account account)
+        {
+            var protections = await ListedAccount.ReverseSearchProtectionsAsync(DbContext, account.Name);
+            var mapping = new Dictionary<string, ProtectedWorld>();
+            foreach(var whereami in protections)
+            {
+                if (mapping.ContainsKey(whereami.ToLowerInvariant())) continue;
+                var protection = await GetProtectionAsync(World.ParseWhereami(whereami));
+                mapping.Add(protection.Whereami.ToLowerInvariant(), protection);
+            }
+            return mapping.Values;
+        }
+
+        /// <summary>
         /// Sets or Creates a world protection
         /// </summary>
         /// <param name="whereami"></param>

@@ -15,6 +15,8 @@ namespace Starwatch.Monitoring
         const string FLYING_SHIP = "Flying ship for player ";
         const string FATAL_ERROR = "UniverseServer: exception caught: (CelestialException) CelestialMasterDatabase::childOrbits called on invalid coordinate";
 
+        public override int Priority => 51;
+
         /// <summary>
         /// The message to ban with
         /// </summary>

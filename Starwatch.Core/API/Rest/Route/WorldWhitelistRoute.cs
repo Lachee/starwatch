@@ -106,8 +106,51 @@ namespace Starwatch.API.Rest.Route
         /// </summary>
         public override RestResponse OnPatch(Query query, object payloadObject)
         {
-            //TODO: Fix t h is
-            throw new NotImplementedException();
+            //get the manager
+            var manager = GetWhitelistManager();
+            if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
+
+            //Get the payload
+            OptionalProtectedWorld patch = (OptionalProtectedWorld)payloadObject;
+
+            //Run the patch
+            var task = Task.Run(async () => {
+
+                //Get the protection
+                var protection = await manager.GetProtectionAsync(World);
+                if (protection == null) return OnPost(query, payloadObject);
+
+                //update values
+                if (patch.AllowAnonymous.HasValue)
+                    protection.AllowAnonymous = patch.AllowAnonymous.Value;
+
+                if (patch.Mode.HasValue)
+                    protection.Mode = patch.Mode.Value;
+
+                if (patch.Name != null)
+                    protection.Name = patch.Name;
+
+                //Add the users
+                if (patch.AccountList != null)
+                {
+                    foreach (var accname in patch.AccountList)
+                    {
+                        var acc = await Starbound.Configurator.GetAccountAsync(accname);
+                        await protection.SetAccountAsync(acc, "");
+                    }
+                }
+
+                await protection.SaveAsync(manager.DbContext);
+                return OnGet(query);
+            });
+
+            //If we are async, return instantly
+            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
+
+            //Return the newly added route
+            task.Wait();
+            return task.Result;
+
 
             ////get the manager
             //var manager = GetWhitelistManager();

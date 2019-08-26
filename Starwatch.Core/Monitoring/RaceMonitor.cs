@@ -20,6 +20,7 @@ We detected the race ^white;'{key}'
         private int _errorTally = 0;
         private int _errorConnection = 0;
         private string _errorKey = "";
+        public override int Priority => 59;
 
         public RaceMonitor(Server server) : base(server, "RACE")
         {

@@ -9,6 +9,8 @@ namespace Starwatch.Monitoring
     {
         private bool _logChat, _logInfo, _logWarning, _logError;
 
+        public override int Priority => 10;
+
         public LogMonitor(Server server) : base(server, "Game")
         {
             Logger.Colourise = true;

@@ -7,17 +7,20 @@ using System.Threading.Tasks;
 
 namespace Starwatch.Monitoring
 {
-    class DisagreementMonitor : ConfigurableMonitor
+    class WorldThreadMonitor : ConfigurableMonitor
     {
-        public const string DISAGREEMENT_KEY = "WorldServerThread exception caught handling incoming packets for client";
+        public const string ERROR_MESSAGE = "WorldServerThread exception caught handling incoming packets for client";
         public string BanFormat => Configuration.GetString("ban_format",
-@"^orange;You have been banned ^white;automatically ^orange;for using mods that are NOT multiplayer friendly.
+@"^orange;You have been banned ^white;automatically ^orange;for causing a world exception.
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
 ^pink;https://iLoveBacons.com/requests/");
-        
-        public DisagreementMonitor(Server server) : base(server, "RACE")
+
+
+        public override int Priority => 50;
+
+        public WorldThreadMonitor(Server server) : base(server, "WORLD")
         {
         }
 
@@ -29,15 +32,15 @@ namespace Starwatch.Monitoring
 
         public override async Task<bool> HandleMessage(Message msg)
         {
-            if (msg.Level != Message.LogLevel.Error) return false;
+            //if (msg.Level != Message.LogLevel.Error) return false;
 
             try
             {
-                if (msg.Content.StartsWith(DISAGREEMENT_KEY))
+                if (msg.Content.StartsWith(ERROR_MESSAGE))
                 {
                     //Attempt to find the person
                     var coloni = msg.Content.IndexOf(':');
-                    var client = msg.Content.Cut(DISAGREEMENT_KEY.Length + 1, coloni);
+                    var client = msg.Content.Cut(ERROR_MESSAGE.Length + 1, coloni);
                     var report = new DisagreementCrashReport() { Content = msg.ToString() };
 
                     //Parse the name
@@ -75,7 +78,7 @@ namespace Starwatch.Monitoring
             {
                 //Throw an error and just abort by default.
                 Logger.LogError(e);
-                Server.LastShutdownReason = $"Disagreement Shutdown: {e.Message}";
+                Server.LastShutdownReason = $"Disagreement Shutdown: {e.Message}\n" + e.StackTrace;
                 return true;
             }
 

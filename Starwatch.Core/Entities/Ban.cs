@@ -65,7 +65,7 @@ namespace Starwatch.Entities
         /// <param name="player">The player to create the ban object from</param>
         /// <param name="reason">The reason for the ban</param>
         /// <param name="moderator">The moderator responsible for the ban</param>
-        public Ban(Player player, string reason, string moderator)
+        public Ban(Player player, string reason, string moderator) : this()
         {
             IP = player.IP;
             UUID = string.IsNullOrEmpty(player.UUID) ? null : player.UUID;
@@ -182,7 +182,7 @@ namespace Starwatch.Entities
 
             //We are going to ignore legacy bans from now on!
             //TODO: Create a ticket number
-            if (!Ticket.HasValue) return false;
+            //if (!Ticket.HasValue) return false;
 
             //If we have a ticket, add it
             if (Ticket.HasValue && Ticket.Value > 0)

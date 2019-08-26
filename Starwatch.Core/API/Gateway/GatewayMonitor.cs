@@ -8,6 +8,8 @@ namespace Starwatch.API.Gateway
     internal class GatewayMonitor : Monitoring.Monitor
     {
         public ApiHandler Api => Server.Starwatch.ApiHandler;
+        public override int Priority => 21;
+
         public GatewayMonitor(Server server) : base(server, "Gateway")
         {
             //=== Player EVENTS

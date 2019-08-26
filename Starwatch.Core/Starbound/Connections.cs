@@ -20,6 +20,8 @@ namespace Starwatch.Starbound
         private static readonly Regex regexLoggedMsg = new Regex(@"'(.*)' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
         private static readonly Regex regexClientMsg = new Regex(@"'(.*)' <(\d+)> \(([a-zA-Z0-9.:]*)\) (connected|disconnected)( for reason: (.*))?", RegexOptions.Compiled);
 
+        public override int Priority => 0;
+
         /// <summary>
         /// The last ID to conenct
         /// </summary>

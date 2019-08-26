@@ -12,7 +12,9 @@ namespace Starwatch.Monitoring
 
         public SegfaultMonitor(Server server) : base(server, "Segfault") { }
 
-		public override Task<bool> HandleMessage(Message msg)
+        public override int Priority => 200;
+
+        public override Task<bool> HandleMessage(Message msg)
 		{
             //We only care for error messages, which we will use to find segfaults.
             if (msg.Level == Message.LogLevel.Error)

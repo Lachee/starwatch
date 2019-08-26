@@ -146,7 +146,7 @@ namespace Starwatch
         {
             //Prepare the server object
             var server = new Server(this, configuration);
-            await server.LoadMonitors();
+            await server.LoadAssemblyMonitorsAsync(System.Reflection.Assembly.GetAssembly(typeof(Server)));
 
             //Return the server
             return server;

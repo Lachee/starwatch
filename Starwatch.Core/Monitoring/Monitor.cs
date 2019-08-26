@@ -14,6 +14,8 @@ namespace Starwatch.Monitoring
 		public Logger Logger { get; }
 		public string Name { get; }
 
+        public virtual int Priority => 100;
+
         public Monitor(Server server)
         {
             this.Server = server;

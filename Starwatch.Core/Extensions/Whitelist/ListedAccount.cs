@@ -47,21 +47,50 @@ namespace Starwatch.Extensions.Whitelist
         }
 
         /// <summary>
+        /// Fetches all the listings the account has.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public static async Task<List<ListedAccount>> LoadAllAsync(DbContext db, string account)
+        {
+            return await db.SelectAsync<ListedAccount>("!protections_accounts", ReadAccount, new Dictionary<string, object>()
+            {
+                { "account", account }
+            });
+        }
+
+        /// <summary>
+        /// Fetches all the whereami of the account
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public static async Task<List<string>> ReverseSearchProtectionsAsync(DbContext db, string account)
+        {
+            return await db.ExecuteAsync<string>("SELECT whereami FROM !protections_accounts LEFT JOIN !protections ON !protections.id = protections_accounts.id WHERE account=:account", 
+                (reader) => reader.GetString("whereami"),
+                new Dictionary<string, object>() { { "account", account } });
+        }
+
+        private static ListedAccount ReadAccount(System.Data.Common.DbDataReader reader)
+        {
+            return new ListedAccount()
+            {
+                ProtectionId = reader.GetInt64("protection"),
+                AccountName = reader.GetString("account"),
+                Reason = reader.GetString("reason")
+            };
+        }
+
+        /// <summary>
         /// Loads the account
         /// </summary>
         /// <param name="db"></param>
         /// <returns></returns>
         public async Task<bool> LoadAsync(DbContext db)
         {
-            var result = await db.SelectOneAsync<ListedAccount>(Table, (reader) =>
-            {
-                return new ListedAccount()
-                {
-                    ProtectionId = reader.GetInt64("protection"),
-                    AccountName = reader.GetString("account"),
-                    Reason = reader.GetString("reason")
-                };
-            }, new Dictionary<string, object>()
+            var result = await db.SelectOneAsync<ListedAccount>(Table, ReadAccount, new Dictionary<string, object>()
             {
                 { "protection", ProtectionId },
                 { "account", AccountName },

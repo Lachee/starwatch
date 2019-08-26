@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Starwatch.Starbound
@@ -117,25 +118,33 @@ namespace Starwatch.Starbound
         /// Loads all the monitors from the config. This must be called for anything useful to happen
         /// </summary>
         /// <returns></returns>
-        public async Task LoadMonitors()
+        public async Task LoadAssemblyMonitorsAsync(Assembly assembly)
         {
             //Unload all previous monitors
             await UnloadMonitors();
 
             //Load up the connection
             Connections = new Connections(this);
-            _monitors = new List<Monitor>() { Connections };
+            var monitors = new List<Monitor>();
 
-            //Register all the objects
-            foreach (string monitor in Configuration.GetObject<string[]>("monitors", new string[0]))
+            var types = assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Monitor))).Where(t => !t.IsAbstract);
+            foreach (var type in types)
             {
-                var type = Type.GetType(monitor);
-
                 var constructor = type.GetConstructor(typeof(Server));
-                var instance = (Monitoring.Monitor)constructor.Invoke(this);
-                await instance.Initialize();
-                _monitors.Add(instance);
+                var instance = (Monitoring.Monitor) constructor.Invoke(this);
+                monitors.Add(instance);
+
+                if (type == typeof(Connections))
+                    Connections = instance as Connections;
             }
+
+            _monitors = new List<Monitor>();
+            foreach(var m in monitors.OrderBy(m => m.Priority))
+            {
+                _monitors.Add(m);
+                await m.Initialize();
+            }
+            
 
             //Just making sure things are okay.
             if (_monitors.Count <= 1) Logger.LogWarning("NOT MANY MONITORS REGISTERED! Did edit the config yet?");
@@ -236,7 +245,7 @@ namespace Starwatch.Starbound
         /// <param name="reload">Reloads the server with the ban</param>
         /// <param name="kick">Kicks the user from the server after the ban is added.</param>
         /// <returns></returns>
-        public async Task<long> Ban(Player player, string reason, string moderator = "starwawtch", bool reload = true, bool kick = true)
+        public async Task<long> Ban(Player player, string reason, string moderator = "starwatch", bool reload = true, bool kick = true)
         {
             Logger.Log("Creating Player Ban: " + player);
 
