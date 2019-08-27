@@ -26,6 +26,10 @@
     --right-width: 860px;
 }
 
+html, body {
+    height: 100%;
+}
+
 body
 {
 	background: var(--ansi-background);
