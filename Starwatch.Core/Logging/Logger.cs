@@ -195,7 +195,7 @@ namespace Starwatch.Logging
 		public void LogError(Exception exception, string format = "Exception Occured: {0}")
 		{
 			//Log the message of the exception
-			LogError(format, exception.Message);
+			LogError(format, "(" + exception.GetType().Name + ") " + exception.Message);
 
 			//If we are an aggregated exception, log all the sub exceptions
 			if (exception is AggregateException)

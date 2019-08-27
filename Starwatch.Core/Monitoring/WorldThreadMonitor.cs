@@ -78,7 +78,7 @@ namespace Starwatch.Monitoring
             {
                 //Throw an error and just abort by default.
                 Logger.LogError(e);
-                Server.LastShutdownReason = $"Disagreement Shutdown: {e.Message}\n" + e.StackTrace;
+                Server.LastShutdownReason = $"Disagreement Shutdown ("+e.GetType().Name+"): {e.Message}\n" + e.StackTrace;
                 return true;
             }
 
