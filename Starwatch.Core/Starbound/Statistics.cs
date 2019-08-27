@@ -1,5 +1,7 @@
 ﻿using Starwatch.Entities;
+using Starwatch.Monitoring;
 using System;
+using System.Linq;
 using static Starwatch.Starbound.Server;
 
 namespace Starwatch.Starbound
@@ -12,7 +14,7 @@ namespace Starwatch.Starbound
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public double Uptime { get; set; }
-
+        public long UptimeId { get; set; }
         public int TotalAccounts { get; set; }
 
         public string LastShutdownReason { get; set; }
@@ -25,7 +27,10 @@ namespace Starwatch.Starbound
             LastConnectionID = server.Connections.LastestPlayer?.Connection;
             StartTime = server.StartTime;
             EndTime = server.EndTime;
-            
+
+            var uptimeMonitor = server.GetMonitors<UptimeMonitor>().FirstOrDefault();
+            UptimeId = uptimeMonitor != null ? uptimeMonitor.CurrentUptimeId : 0;
+
             TotalAccounts = Account.LoadAllActiveAsync(server.DbContext).Result.Count;
 
             Uptime = 0;
