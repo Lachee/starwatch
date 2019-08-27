@@ -37,7 +37,7 @@ namespace Starwatch.Extensions.Whitelist
 
             //Load the protected world
             ProtectedWorld pw = await GetProtectionAsync(player.Location);
-            if (pw != null && await pw.CheckPermissionAsync(player))
+            if (pw != null && !(await pw.CheckPermissionAsync(player)))
             {
                 Logger.Log("Player {0} is not allowed in world {1} because of {2}", player, pw.World, pw.Mode);
                 await Server.Kick(player, KickFormat.Replace("{mode}", pw.Mode.ToString()));
