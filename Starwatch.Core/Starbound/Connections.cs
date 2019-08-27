@@ -22,6 +22,8 @@ namespace Starwatch.Starbound
 
         public override int Priority => 0;
 
+        public bool KickUnnoticedConnections => Configuration.GetBool("kick_unnoticed", true);
+
         /// <summary>
         /// The last ID to conenct
         /// </summary>
@@ -492,8 +494,18 @@ namespace Starwatch.Starbound
                     Logger.Log("Player Connected Sneaky: {0}", player);
                     OnPlayerConnect?.Invoke(_connections[kp.Value.Connection]);
 
-                    //Make sure they have a valid username
-                    await EnforceCharacterName(_connections[kp.Value.Connection]);
+                    //If we do not allow unkown connections, immediately kick them
+                    if (KickUnnoticedConnections)
+                    {
+                        //Kick em
+                        await player.Kick("Connection established without notice. Please try connecting again.");
+                    }
+                    else
+                    {
+                        //Make sure they have a valid username
+                        await EnforceCharacterName(_connections[kp.Value.Connection]);
+                    }
+
                 }
                 catch (Exception e)
                 {

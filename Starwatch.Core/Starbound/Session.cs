@@ -39,7 +39,7 @@ namespace Starwatch.Starbound
         public Session(Server server, long id = 0)
         {
             Server = server;
-            ConnectedAt = DateTime.Now;
+            ConnectedAt = DateTime.UtcNow;
             Id = id;
 
             var monitor = server.GetMonitors<UptimeMonitor>().FirstOrDefault();
