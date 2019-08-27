@@ -68,10 +68,15 @@ namespace Starwatch.Extensions.Whitelist
         /// <returns></returns>
         public async Task<bool> CheckPermissionAsync(Account account)
         {
-            if (account == null) return AllowAnonymous;
+            //If the account is anonymous, return if we allow anonymous.
+            if (account == null || account.Name.Equals(Account.Annonymous))
+                return AllowAnonymous;
 
-            bool listed = (await GetAccountAsync(account)) != null;
-            return Mode == WhitelistMode.Whitelist ? listed : !listed;
+            //Check if the account is listed.
+            var listing = await GetAccountAsync(account);
+            bool included = listing != null && listing.AccountName == account.Name;
+
+            return (Mode == WhitelistMode.Whitelist) == included;
         }
 
         /// <summary>
