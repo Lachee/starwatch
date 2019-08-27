@@ -143,8 +143,15 @@ namespace Starwatch.Starbound
                 {
                     Logger.Log("Player updated their location!");
                     _connections[connection].Whereami = location;
+
+                    //Attempt to update the cache
+                    //TODO: Make a WorldManager
+                    if (_connections[connection].Location is CelestialWorld celesial && celesial.Details == null)
+                        try { await celesial.GetDetailsAsync(Server); } catch (Exception) { }
+
                     try
                     {
+                        //Tell the world the event occured
                         OnPlayerUpdate?.Invoke(_connections[connection]);
                     }
                     catch (Exception e)
