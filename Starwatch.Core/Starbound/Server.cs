@@ -534,36 +534,39 @@ namespace Starwatch.Starbound
                 bool success = _process.Start();
                 if (success)
                 {
-                    //Try and initialize the rcon.
-                    if (Configurator.RconServerPort > 0)
+                    try
                     {
-                        Rcon = new Rcon.StarboundRconClient(this);
-                        OnRconClientCreated?.Invoke(this, Rcon);
-                        Logger.Log("Created RCON Client.");
-                    }
-
-                    #region Invoke the start event
-                    foreach (var m in _monitors)
-                    {
-                        try
+                        //Try and initialize the rcon.
+                        if (Configurator.RconServerPort > 0)
                         {
-                            Logger.Log("OnServerStart :: {0}", m.Name);
-                            await m.OnServerStart();
+                            Rcon = new Rcon.StarboundRconClient(this);
+                            OnRconClientCreated?.Invoke(this, Rcon);
+                            Logger.Log("Created RCON Client.");
                         }
-                        catch (Exception e)
+
+                        #region Invoke the start event
+                        foreach (var m in _monitors)
                         {
-                            Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
+                            try
+                            {
+                                Logger.Log("OnServerStart :: {0}", m.Name);
+                                await m.OnServerStart();
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
+                            }
                         }
-                    }
-                    #endregion
+                        #endregion
 
-                    //Handle the messages
-                    Logger.Log("Handling Messages");
+                        //Handle the messages
+                        Logger.Log("Handling Messages");
 
-                    //Generate a new token source
-                    _process.BeginOutputReadLine();
-                    _process.OutputDataReceived += async (sender, args) =>
-                    {
+                        //Generate a new token source
+                        _process.EnableRaisingEvents = true;
+                        _process.BeginOutputReadLine();
+                        _process.OutputDataReceived += async (sender, args) =>
+                        {
                         //if we are terminating, just skip
                         if (_terminate) return;
 
@@ -572,23 +575,34 @@ namespace Starwatch.Starbound
 
                         //Do terminate but don't wait for it
                         if (_terminate) _ = Terminate();
-                    };
-                    _process.Exited += (sender, args) =>
-                    {
-                        Logger.Log("Process Exited. ");
-                        if (_processAbortTokenSource != null && !_processAbortTokenSource.IsCancellationRequested)
+                        };
+
+                        _process.Exited += (sender, args) =>
                         {
-                            Logger.Log("Requesting closure of token");
-                            _processAbortTokenSource.Cancel();
-                        }
-                    };
+                            Logger.Log("Process Exited. ");
+                            if (_processAbortTokenSource != null && !_processAbortTokenSource.IsCancellationRequested)
+                            {
+                                Logger.Log("Requesting closure of token");
+                                _processAbortTokenSource.Cancel();
+                            }
+                        };
 
-                    //Do the cancel
-                    try { await Task.Delay(-1, _processAbortTokenSource.Token); } catch (TaskCanceledException) { }
+                        //Process already exited? Mustn't been a clean start
+                        if (_process.HasExited)
+                            await Terminate();
 
-                    //We have exited the loop, probably because we have been terminated
-                    _process.CancelOutputRead();
-                    Logger.Log("Left the read loop");
+                        //Do the cancel
+                        try { await Task.Delay(-1, _processAbortTokenSource.Token); } catch (TaskCanceledException) { }
+
+                        //We have exited the loop, probably because we have been terminated
+                        _process?.CancelOutputRead();
+                        Logger.Log("Left the read loop");
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e, "CRITICAL ERROR IN RUNTIME: {0}");
+                        LastShutdownReason = "Critical Error: " + e.Message;
+                    }
                 }
                 else
                 {
