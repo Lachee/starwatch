@@ -12,7 +12,7 @@ namespace Starwatch.Monitoring
 
         public SegfaultMonitor(Server server) : base(server, "Segfault") { }
 
-        public override int Priority => 200;
+        public override int Priority => 50;
 
         public override Task<bool> HandleMessage(Message msg)
 		{

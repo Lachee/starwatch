@@ -383,8 +383,11 @@ namespace Starwatch.Starbound
                     _processAbortTokenSource = null;
                 }
 
-                Logger.Log("Cancelling Process...");
+                Logger.Log("Reading All & Cancelling Reading...");
+                _process.StandardOutput.ReadToEnd();
+                _process.StandardError.ReadToEnd();
                 _process.CancelOutputRead();
+                _process.CancelErrorRead();
 
                 Logger.Log("Killing & Waiting for process...");
                 if (!_process.HasExited)
@@ -685,8 +688,8 @@ namespace Starwatch.Starbound
                         {
                             Logger.Log(m.Name + " has requested for us to terminate the loop");
                             shouldTerminate = true;
+                            break;
                         }
-
                     }
                     catch (Exceptions.ServerShutdownException e)
                     {
@@ -694,6 +697,22 @@ namespace Starwatch.Starbound
                         LastShutdownReason = e.Message;
                         shouldTerminate = true;
                         break;
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (e.InnerException is Exceptions.ServerShutdownException)
+                        {
+                            var sse = (Exceptions.ServerShutdownException) e.InnerException;
+                            Logger.Log($"Server Restart Requested by {m.Name}: {sse.Message}");
+                            LastShutdownReason = sse.Message;
+                            shouldTerminate = true;
+                            break;
+                        }
+                        else
+                        {
+                            //Catch any errors in the handler
+                            Logger.LogError(e, "HandleMessage ERR - " + m.Name + ": {0}");
+                        }
                     }
                     catch (Exception e)
                     {
