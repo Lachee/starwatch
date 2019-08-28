@@ -90,9 +90,16 @@ namespace Starwatch.Entities
                 TerrainSize = jobj["celestial"]["parameters"]["worldSize"].Value<string>();
                 TerrainType = jobj["celestial"]["parameters"]["worldType"].Value<string>();
                 PrimaryBiome = jobj["world"]["primaryBiome"].Value<string>();
-                PlanetGraphics = jobj["sky"]["planet"]; //.ToString(Formatting.None);
                 DayLength = jobj["world"]["dayLength"].Value<float>();
                 ThreatLevel = jobj["world"]["threatLevel"].Value<int>();
+
+                if (jobj["sky"]["satellites"].HasValues)
+                    PlanetGraphics = jobj["sky"]["satellites"];
+
+                if (jobj["sky"]["planet"].HasValues)
+                    PlanetGraphics = jobj["sky"]["planet"];
+
+
 
                 //Planet = jobj["celestial"]["coordinate"]["planet"].Value<int>();
                 //Satellite = jobj["celestial"]["coordinate"]["satellite"].Value<int>();
@@ -133,9 +140,11 @@ namespace Starwatch.Entities
                 TerrainSize = reader.GetString("size");
                 TerrainType = reader.GetString("type");
                 PrimaryBiome = reader.GetString("biome");
-                PlanetGraphics = JToken.Parse(reader.GetString("planet_graphics"));
                 DayLength = reader.GetFloat("day_length");
                 ThreatLevel = reader.GetInt32("threat_level");
+
+                var pg = reader.GetString("planet_graphics");
+                if (pg != null) PlanetGraphics = JToken.Parse(pg);
 
                 //I only really want to update the world if it doesnt already exist.
                 if (World == null)
@@ -166,7 +175,7 @@ namespace Starwatch.Entities
                     ["size"]            = TerrainSize,
                     ["type"]            = TerrainType,
                     ["biome"]           = PrimaryBiome,
-                    ["planet_graphics"] = PlanetGraphics.ToString(Formatting.None),
+                    ["planet_graphics"] = PlanetGraphics?.ToString(Formatting.None),
                     ["day_length"]      = DayLength,
                     ["threat_level"]    = ThreatLevel
                 });
