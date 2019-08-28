@@ -253,6 +253,11 @@ namespace Starwatch.Starbound
             await Connections.RefreshListing();
             Player realP = Connections[player.Connection];
 
+            //Make sure real p exists
+            if (realP == null) realP = player;
+            if (realP == null)
+                throw new ArgumentNullException("Cannot ban the player because it does not exist.");
+
             //Ban the user
             long ticket = await Ban(new Ban(realP, reason, moderator), reload);
 

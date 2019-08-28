@@ -67,6 +67,9 @@ namespace Starwatch.Entities
         /// <param name="moderator">The moderator responsible for the ban</param>
         public Ban(Player player, string reason, string moderator) : this()
         {
+            if (player == null)
+                throw new ArgumentNullException("player");
+
             IP = player.IP;
             UUID = string.IsNullOrEmpty(player.UUID) ? null : player.UUID;
             Reason = reason;

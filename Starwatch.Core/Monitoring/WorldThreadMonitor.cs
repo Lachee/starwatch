@@ -54,9 +54,13 @@ namespace Starwatch.Monitoring
                             player = Server.Connections.LastestPlayer;
                         }
 
-                        //ban the players
-                        report.Player = player;
-                        await Server.Ban(player, BanFormat, "disagrement-monitor", false, false);
+                        //Make sure we actually have a player before continuing the ban spree.
+                        if (player != null)
+                        {
+                            //ban the players
+                            report.Player = player;
+                            await Server.Ban(player, BanFormat, "disagrement-monitor", false, false);
+                        }
                     }
                     else
                     {
