@@ -403,7 +403,10 @@ namespace Starwatch.Starbound
                     if (Environment.OSVersion.Platform == PlatformID.Unix)
                     {
                         //Just fucking murder it and every spawn of a child it may have
-                        var pkill = Process.Start("pkill starbound");
+                        var pkill = Process.Start(new ProcessStartInfo("pkill", "starbound")
+                        {
+                            UseShellExecute = true
+                        });
 
                         //We can at least wait for pkill to finish too.
                         pkill.WaitForExit();
