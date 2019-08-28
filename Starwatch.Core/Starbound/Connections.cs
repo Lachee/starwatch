@@ -95,9 +95,10 @@ namespace Starwatch.Starbound
             if (msg.Level == Message.LogLevel.Chat)
             {
                 //Nickname has changed?
-                if (msg.Content.StartsWith("/nick") && msg.Content.Length > 6)
+                if (msg.Content.StartsWith("/nick"))
                 {
-                    string nickname = msg.Content.Substring(6);
+                    string content = msg.Content.Trim();
+                    string nickname = content.Length < 6 ? "" : msg.Content.Substring(6);
                     Player player = _connections.Values.Where(p => p.Username.Equals(msg.Author)).First();
                     if (player != null)
                     {
@@ -595,7 +596,8 @@ namespace Starwatch.Starbound
         {
             if (name == null) return true;
 
-            name = name.ToLowerInvariant();
+            name = name.Trim().ToLowerInvariant();
+            if (name.Length == 0) return false;
             if (name.Contains('>')) return false;
             if (name.Contains('<')) return false;
             if (name.Contains(')')) return false;
