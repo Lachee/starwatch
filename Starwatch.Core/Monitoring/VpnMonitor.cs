@@ -9,7 +9,7 @@ namespace Starwatch.Monitoring
 {
     class VpnMonitor : ConfigurableMonitor
     {
-        public string NoAddressReason = "Invalid connection.";
+        public string NoAddressReason = "Malformed connection.";
         public string AnonymousVpnReason = "Invalid connection.";
         public string IPv6Reason = "IPv6 is not supported on this platform.";
 
