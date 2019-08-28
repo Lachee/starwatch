@@ -52,12 +52,28 @@
 <script>
 	var scale = 0.5;
 	var minimumOrbit = 0.1;
-	var orbitScale = 0.25;
-	function s(v) {  return v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v); }
-	//function s(v) {  return v; }
+	var orbitScale = 0.1;
+	var moonOrbitModifier = 0.25;
+	var logScaling = false;
+	
+	
+	
+	
+	//END CONFIG
 //https://github.com/jdfergason/Leaflet.Ellipse/blob/master/l.ellipse.js
 //https://leafletjs.com/examples/crs-simple/crs-simple.html
 //https://github.com/Leaflet/Leaflet.markercluster#options
+	if (!logScaling) 
+	{
+		scale /= 10;
+		minimumOrbit /= 10;
+		orbitScale /= 10;
+		moonOrbitModifier /= 10;
+	}
+		
+	function s(v) {  return !logScaling ? v : (v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v)); }
+	
+	
 	var yx = L.latLng;
 	var xy = function(x, y) 
 	{
@@ -106,7 +122,7 @@
 	});
 	var blueStarIcon = new StarIcon({iconUrl: 'map/star13pxLightBlue.gif'});
 	var giantStarIcon = new StarIcon({iconUrl: 'map/star13pxLightBlue-scaled.gif'});
-	var largePlanetIcon = new PlanetIcon({iconUrl: 'map/planet_small_34px.png'});
+	var largePlanetIcon = new PlanetIcon({iconUrl: 'map/planet_large_34px.png'});
 	var smallPlanetIcon = new PlanetIcon({iconUrl: 'map/planet_small_34px.png'});
 
 	var showingState = 0;
@@ -132,7 +148,7 @@
 	};
 
 	map.on('zoomend', function(ev){
-	  if (map.getZoom() < 10) 
+	  if (map.getZoom() < 13) 
 	  {
 		//if (showingState >= 0)
 		{
@@ -165,9 +181,17 @@
 		return "<b>" + formatStarboundTags(world.Details.Name) + "</b><hr>" + world.Details.Description + "<br>" + world.Details.TerrainType + " (" + world.Details.TerrainSize + ")<br>" + world.Details.PrimaryBiome + "<br>" + world.Whereami;
 	}
 
+	function getSystemPopup(x, y, isLocalView)
+	{
+		let coord = x + ", " + y;
+		let txt = "System " + coord;
+		if (!isLocalView)
+			txt += "<br><a href='#" + coord + "' onclick='flyToCoordinate(map, " + coord + ");'>Fly To</a>";
+		return txt;
+	}
 
-	getWorlds(map, scale);
-	function getWorlds(map, scale = 1)
+	getWorlds(map);
+	function getWorlds(map)
 	{
 		const Http = new XMLHttpRequest();
 		const url='https://sb.ilovebacons.com:4242/api/world/search?systems';
@@ -182,6 +206,7 @@
 				for(var key in response.Response)
 				{
 					var scoord = null;
+					var planets = [];
 					for(var i in response.Response[key]) 
 					{
 						var world = response.Response[key][i];
@@ -190,22 +215,54 @@
 							scoord = xy(world.X, world.Y);
 						
 						var radius = minimumOrbit + world.Planet * orbitScale;
-						var pos = rcircle(world.X, world.Y, radius);
+						var centerX = world.X;
+						var centerY = world.Y;
+						
+							
+						if (world.IsMoon)
+						{
+							//Generate coordinates in advance for ourself
+							if (planets[world.Planet] == null)
+								planets[world.Planet] = rcircle(centerX, centerY, radius);
+							
+							//Base our center point of the planet
+							centerX = planets[world.Planet][0];
+							centerY = planets[world.Planet][1];	
+							
+							//Recalculate the radius
+							radius = (minimumOrbit + world.Moon * orbitScale) * moonOrbitModifier;
+						}
+						
+						//Generate coordinates
+						var pos = rcircle(centerX, centerY, radius);
+						
+						//Update our position so any moons can use it
+						if (!world.IsMoon)
+							planets[world.Planet] = pos;
+						
+						//Calculate our laglong
 						var coord = xy(pos[0], pos[1]);
 						
-						
+						//Create our marker
 						var marker = L.marker(coord, {icon: world.Details.TerrainSize == 'large' ? largePlanetIcon : smallPlanetIcon}).bindPopup(getPopup(world));
 						
-						dist = map.distance(scoord, coord) * (1.112 * 100000);
-						console.log(scoord, coord, dist);
-						var ecllipse = L.ellipse(scoord, [dist, dist], 90);
+						//Create our circle
+						var centerCoord = xy(centerX, centerY);
+						var dist = map.distance(centerCoord, coord) * (1.113 * 100000);						
+						var ecllipse = L.ellipse(centerCoord, [dist, dist], 0, {
+							stroke: true,
+							weight: 1,
+							fill: false,
+							color: '#e3e3e33a',
+							bubblingMouseEvents: false
+						});
 						systemLayer.addLayer(marker);
 						orbitLayer.addLayer(ecllipse);
 					}
 						
 					if (scoord != null) {
-						systemLayer.addLayer(L.marker(scoord, { icon: blueStarIcon }).bindPopup("System: " + world.X + ", " + world.Y));
-						starLayer.addLayer(L.marker(scoord, { icon: giantStarIcon }).bindPopup("System: " + world.X + ", " + world.Y));
+						systemLayer.addLayer(L.marker(scoord, { icon: blueStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, true)));
+						starLayer.addLayer(L.marker(scoord, { icon: giantStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, false)));
 					}
 				}
 				
@@ -252,6 +309,8 @@
 	}
 
 	function flyToCoordinate(map, x, y) { 
+		$('input#x').val(x);
+		$('input#y').val(y);
 		var coord = xy(x, y);
 		map.flyTo(coord, 14);
 	}

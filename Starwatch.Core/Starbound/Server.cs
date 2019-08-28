@@ -389,6 +389,9 @@ namespace Starwatch.Starbound
                     _processAbortTokenSource = null;
                 }
 
+                //Tell the process to stop throwing events
+                _process.EnableRaisingEvents = false;
+
                 Logger.Log("Reading All & Cancelling Reading...");
                 _process.CancelOutputRead();
                 //_process.CancelErrorRead();
@@ -396,8 +399,21 @@ namespace Starwatch.Starbound
                 Logger.Log("Killing & Waiting for process...");
                 if (!_process.HasExited)
                 {
-                    _process.Kill();
-                    //_process.WaitForExit();
+                    //If we are linux, we have access to more powerful tools to make sure starbound terminates
+                    if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    {
+                        //Just fucking murder it and every spawn of a child it may have
+                        var pkill = Process.Start("pkill starbound");
+
+                        //We can at least wait for pkill to finish too.
+                        pkill.WaitForExit();
+                    }
+                    else
+                    {
+                        //We are going to be good little boys and girls
+                        _process.Kill();
+                        _process.WaitForExit();
+                    }
                 }
 
                 Logger.Log("Disposing of process...");
