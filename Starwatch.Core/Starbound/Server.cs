@@ -352,6 +352,7 @@ namespace Starwatch.Starbound
         /// <returns></returns>
         public async Task Terminate(string reason = null)
         {
+            _terminate = true;
             LastShutdownReason = reason ?? LastShutdownReason;
             if (_processAbortTokenSource != null)
             {
@@ -384,10 +385,9 @@ namespace Starwatch.Starbound
                 }
 
                 Logger.Log("Reading All & Cancelling Reading...");
-                _process.StandardOutput.ReadToEnd();
-                _process.StandardError.ReadToEnd();
                 _process.CancelOutputRead();
-                _process.CancelErrorRead();
+                _process.StandardOutput.ReadToEnd();
+                //_process.CancelErrorRead();
 
                 Logger.Log("Killing & Waiting for process...");
                 if (!_process.HasExited)
@@ -544,8 +544,14 @@ namespace Starwatch.Starbound
                     _process.BeginOutputReadLine();
                     _process.OutputDataReceived += async (sender, args) =>
                     {
+                        //if we are terminating, just skip
+                        if (_terminate) return;
+
+                        //Process the line
                         _terminate = await ProcessLine(args.Data);
-                        if (_terminate) await Terminate();
+
+                        //Do terminate but don't wait for it
+                        if (_terminate) _ = Terminate();
                     };
                     _process.Exited += (sender, args) =>
                     {
