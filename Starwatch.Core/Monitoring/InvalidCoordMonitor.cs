@@ -25,7 +25,7 @@ namespace Starwatch.Monitoring
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/requests/");
+^pink;https://iLoveBacons.com/request/");
 
         /// <summary>
         /// The detection we have found so far

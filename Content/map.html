@@ -9,6 +9,7 @@
 			
 <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
 <script src="js/sbname.js"></script>
+<script src="js/l.ellipse.min.js"></script>
 <style>
 	#map {
 		width: 100%;
@@ -19,7 +20,7 @@
 	body{
 		padding: 0;
 		margin: 0;
-		background: url('map/space.jpg');
+		background: url('map/space-small.jpg');
 	}
 	
 	.control {
@@ -50,10 +51,11 @@
 
 <script>
 	var scale = 0.5;
-	var worldOffset = 1;
+	var minimumOrbit = 0.1;
+	var orbitScale = 0.25;
 	function s(v) {  return v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v); }
 	//function s(v) {  return v; }
-
+//https://github.com/jdfergason/Leaflet.Ellipse/blob/master/l.ellipse.js
 //https://leafletjs.com/examples/crs-simple/crs-simple.html
 //https://github.com/Leaflet/Leaflet.markercluster#options
 	var yx = L.latLng;
@@ -86,20 +88,74 @@
 		options: {
 			shadowUrl: '',
 			iconSize:     [26, 26],
+			iconAnchor:   [13, 13],
 			shadowSize:   [13, 13],
-			iconAnchor:   [5, 5],
 			shadowAnchor: [5, 5],
-			popupAnchor:  [9, 0]
+			popupAnchor:  [0, 0]
 		}
 	});
-	var blueStarIcon = new StarIcon({iconUrl: 'map/star13pxLightBlue-scaled.gif'});
+	var PlanetIcon = L.Icon.extend({
+		options: {
+			shadowUrl: '',
+			iconSize:     [16, 16],
+			iconAnchor:   [8, 8],
+			shadowSize:   [13, 13],
+			shadowAnchor: [5, 5],
+			popupAnchor:  [0, 0]
+		}
+	});
+	var blueStarIcon = new StarIcon({iconUrl: 'map/star13pxLightBlue.gif'});
+	var giantStarIcon = new StarIcon({iconUrl: 'map/star13pxLightBlue-scaled.gif'});
+	var largePlanetIcon = new PlanetIcon({iconUrl: 'map/planet_small_34px.png'});
+	var smallPlanetIcon = new PlanetIcon({iconUrl: 'map/planet_small_34px.png'});
 
+	var showingState = 0;
+	var orbitLayer = new L.FeatureGroup();
+	var systemLayer = new L.FeatureGroup();
+	var starLayer = new L.FeatureGroup();
 	var map = L.map('map', {
 		crs: L.CRS.Simple,
 		minZoom: -3
 	});
 
-	var bounds = [[-26.5,-25], [1021.5,1023]];
+	L.LatLng.prototype.distanceToCRSSimple = function(other) {
+		other = L.latLng(other);
+		var lngS = 0, latS = 0;
+
+		lngS = other.lng - this.lng;
+		lngS = lngS * lngS;
+
+		latS = other.lat - this.lat;
+		latS = latS * latS;
+
+		return Math.sqrt(lngS + latS);
+	};
+
+	map.on('zoomend', function(ev){
+	  if (map.getZoom() < 10) 
+	  {
+		//if (showingState >= 0)
+		{
+			console.log("Showing Stars");
+			map.removeLayer(orbitLayer);
+            map.removeLayer(systemLayer);
+			showingState = -1;
+		}
+	  } 
+	  else
+	  {
+		//if (showingState <= 0)
+		{
+			console.log("Showing Systems");
+			map.addLayer(orbitLayer);
+			map.addLayer(systemLayer);
+			showingState = 1;
+		}
+	  }
+	});
+
+	//var bounds = [[-26.5,-25], [1021.5,1023]];
+	var bounds = [[0,0], [1000,1000]];
 	map.setView([-0.35, 0.42], 10);
 	//var image = L.imageOverlay('uqm_map_full.png', bounds).addTo(map);
 
@@ -125,23 +181,38 @@
 				console.log(response.Response);
 				for(var key in response.Response)
 				{
-					var world = null;
+					var scoord = null;
 					for(var i in response.Response[key]) 
 					{
-						world = response.Response[key][i];
-						var pos = rcircle(world.X, world.Y, worldOffset);
+						var world = response.Response[key][i];
+						
+						if (scoord == null)
+							scoord = xy(world.X, world.Y);
+						
+						var radius = minimumOrbit + world.Planet * orbitScale;
+						var pos = rcircle(world.X, world.Y, radius);
 						var coord = xy(pos[0], pos[1]);
-						L.marker(coord, {icon: blueStarIcon}).addTo(map).bindPopup(getPopup(world));
-						console.log(coord, key);
+						
+						
+						var marker = L.marker(coord, {icon: world.Details.TerrainSize == 'large' ? largePlanetIcon : smallPlanetIcon}).bindPopup(getPopup(world));
+						
+						dist = map.distance(scoord, coord) * (1.112 * 100000);
+						console.log(scoord, coord, dist);
+						var ecllipse = L.ellipse(scoord, [dist, dist], 90);
+						systemLayer.addLayer(marker);
+						orbitLayer.addLayer(ecllipse);
 					}
 						
-					//if (world != null)
-					//	L.marker(xy(world.X, world.Y)).addTo(map).bindPopup("System: " + world.X + ", " + world.Y);
+					if (scoord != null) {
+						systemLayer.addLayer(L.marker(scoord, { icon: blueStarIcon }).bindPopup("System: " + world.X + ", " + world.Y));
+						starLayer.addLayer(L.marker(scoord, { icon: giantStarIcon }).bindPopup("System: " + world.X + ", " + world.Y));
+					}
 				}
 				
-				
-				map.flyTo([-0.35, 0.42], 6);
+				map.addLayer(starLayer);
+				map.flyTo([-0.35, 0.42], 10);
 			}
+			
 		}
 	}
 	

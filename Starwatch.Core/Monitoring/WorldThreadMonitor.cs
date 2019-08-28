@@ -15,7 +15,7 @@ namespace Starwatch.Monitoring
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/requests/");
+^pink;https://iLoveBacons.com/request/");
 
 
         public override int Priority => 50;

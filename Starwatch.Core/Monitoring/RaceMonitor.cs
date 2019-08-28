@@ -15,7 +15,7 @@ We detected the race ^white;'{key}'
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/requests/");
+^pink;https://iLoveBacons.com/request/");
 
         private int _errorTally = 0;
         private int _errorConnection = 0;

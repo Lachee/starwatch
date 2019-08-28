@@ -14,7 +14,7 @@ namespace Starwatch.Extensions.Whitelist
 @"^orange;You have been kicked ^white;automatically ^orange;for trying to access a {mode} world.
 
 ^blue;If you would like access, please make a request at
-^pink;https://iLoveBacons.com/requests/");
+^pink;https://iLoveBacons.com/request/");
 
 
         [System.Obsolete]
