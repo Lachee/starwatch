@@ -98,7 +98,7 @@ namespace Starwatch.Starbound
                 if (msg.Content.StartsWith("/nick"))
                 {
                     string content = msg.Content.Trim();
-                    string nickname = content.Length < 6 ? "" : msg.Content.Substring(6);
+                    string nickname = content.Length < 6 ? " " : msg.Content.Substring(6);
                     Player player = _connections.Values.Where(p => p.Username.Equals(msg.Author)).First();
                     if (player != null)
                     {
@@ -571,8 +571,8 @@ namespace Starwatch.Starbound
             }
 
             bool containsIllegalCharacters = false;
-            if (!IsNameLegal(player.Username)) containsIllegalCharacters = true;
-            if (!string.IsNullOrEmpty(player.Nickname) && !IsNameLegal(player.Nickname)) containsIllegalCharacters = true;
+            if (!IsNameLegal(player.Username))  containsIllegalCharacters = true;
+            if (!IsNameLegal(player.Nickname))  containsIllegalCharacters = true;
             if (player.Username.Contains("Lachee") && player.AccountName?.ToLowerInvariant() != "lachee") containsIllegalCharacters = true;
 
             //If they are illegal, t hen kick them.
@@ -597,6 +597,7 @@ namespace Starwatch.Starbound
             if (name == null) return true;
 
             name = name.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(name)) return false;
             if (name.Length == 0) return false;
             if (name.Contains('>')) return false;
             if (name.Contains('<')) return false;
