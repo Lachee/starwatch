@@ -402,14 +402,23 @@ namespace Starwatch.Starbound
                     //If we are linux, we have access to more powerful tools to make sure starbound terminates
                     if (Environment.OSVersion.Platform == PlatformID.Unix)
                     {
-                        //Just fucking murder it and every spawn of a child it may have
-                        var pkill = Process.Start(new ProcessStartInfo("pkill", "starbound")
+                        try
                         {
-                            UseShellExecute = true
-                        });
+                            //Just fucking murder it and every spawn of a child it may have
+                            var pkill = Process.Start(new ProcessStartInfo("/bin/bash", "pkill starbound")
+                            {
+                                UseShellExecute = true
+                            });
 
-                        //We can at least wait for pkill to finish too.
-                        pkill.WaitForExit();
+                            //We can at least wait for pkill to finish too.
+                            pkill.WaitForExit();
+                        }
+                        catch(Exception e)
+                        {
+                            Logger.LogError("Failed to terminate with pkill: " + e.Message);
+                            _process.Kill();
+                            _process.WaitForExit();
+                        }
                     }
                     else
                     {
