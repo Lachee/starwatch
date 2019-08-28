@@ -391,14 +391,13 @@ namespace Starwatch.Starbound
 
                 Logger.Log("Reading All & Cancelling Reading...");
                 _process.CancelOutputRead();
-                _process.StandardOutput.ReadToEnd();
                 //_process.CancelErrorRead();
 
                 Logger.Log("Killing & Waiting for process...");
                 if (!_process.HasExited)
                 {
                     _process.Kill();
-                    _process.WaitForExit();
+                    //_process.WaitForExit();
                 }
 
                 Logger.Log("Disposing of process...");
@@ -409,7 +408,7 @@ namespace Starwatch.Starbound
                 EndTime = DateTime.UtcNow;
 
                 Logger.Log("Waiting some time for saftey...");
-                await Task.Delay(2500);
+                await Task.Delay(10000);
             }
             finally
             {
