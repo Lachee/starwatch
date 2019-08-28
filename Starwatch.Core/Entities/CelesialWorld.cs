@@ -56,9 +56,20 @@ namespace Starwatch.Entities
             //public int? Satellite { get; set; }     //This will be 0 if we are not a satellite. celestial/coordinate/satellite
             //public int[] System { get; set; }       //Array of 3 for the sys coords. celestial/coordinate/location
 
-            public float DayLength { get; set; }   //Length of the day. world/dayLength
-            public int ThreatLevel { get; set; }    //The level of the threat. world/threatLevel
+            /// <summary>
+            /// Length of the day
+            /// </summary>
+            public float DayLength { get; set; }
 
+            /// <summary>
+            /// Threat Level of the world
+            /// </summary>
+            public int ThreatLevel { get; set; }
+
+            /// <summary>
+            /// Json Metadata on how the planet is rendered
+            /// </summary>
+            public JToken PlanetGraphics { get; set; }
 
             internal Metadata() { }
             internal Metadata(CelestialWorld world)
@@ -79,6 +90,9 @@ namespace Starwatch.Entities
                 TerrainSize = jobj["celestial"]["parameters"]["worldSize"].Value<string>();
                 TerrainType = jobj["celestial"]["parameters"]["worldType"].Value<string>();
                 PrimaryBiome = jobj["world"]["primaryBiome"].Value<string>();
+                PlanetGraphics = jobj["sky"]["planet"]; //.ToString(Formatting.None);
+                DayLength = jobj["world"]["dayLength"].Value<float>();
+                ThreatLevel = jobj["world"]["threatLevel"].Value<int>();
 
                 //Planet = jobj["celestial"]["coordinate"]["planet"].Value<int>();
                 //Satellite = jobj["celestial"]["coordinate"]["satellite"].Value<int>();
@@ -91,8 +105,6 @@ namespace Starwatch.Entities
                 //    jobj["celestial"]["coordinate"]["location"][2].Value<int>()
                 //};
 
-                DayLength = jobj["world"]["dayLength"].Value<float>();
-                ThreatLevel = jobj["world"]["threatLevel"].Value<int>();
 
             }
 
@@ -121,7 +133,7 @@ namespace Starwatch.Entities
                 TerrainSize = reader.GetString("size");
                 TerrainType = reader.GetString("type");
                 PrimaryBiome = reader.GetString("biome");
-
+                PlanetGraphics = JToken.Parse(reader.GetString("planet_graphics"));
                 DayLength = reader.GetFloat("day_length");
                 ThreatLevel = reader.GetInt32("threat_level");
 
@@ -154,7 +166,7 @@ namespace Starwatch.Entities
                     ["size"]            = TerrainSize,
                     ["type"]            = TerrainType,
                     ["biome"]           = PrimaryBiome,
-                    
+                    ["planet_graphics"] = PlanetGraphics.ToString(Formatting.None),
                     ["day_length"]      = DayLength,
                     ["threat_level"]    = ThreatLevel
                 });
