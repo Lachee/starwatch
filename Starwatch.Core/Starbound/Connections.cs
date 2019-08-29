@@ -26,7 +26,7 @@ namespace Starwatch.Starbound
 
         public override int Priority => 0;
 
-        public bool KickUnnoticedConnections => Configuration.GetBool("kick_unnoticed", true);
+        public bool KickUnnoticedConnections => Configuration.GetBool("kick_unnoticed", false);
 
         /// <summary>
         /// The last ID to conenct
