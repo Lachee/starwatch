@@ -15,11 +15,11 @@ namespace Starwatch.Monitoring
         public override Task Initialize()
         {
             //Make sure we are not in debug mode
-            if (Server.SamplePath != null)
-            {
-                Logger.Log("Cannot run  UDP checks because a sample set is being used.");
-                return Task.CompletedTask;
-            }
+            //if (Server.SamplePath != null)
+            //{
+            //    Logger.Log("Cannot run  UDP checks because a sample set is being used.");
+            //    return Task.CompletedTask;
+            //}
 
             //Setup the automated timer.
             _checkTimer = new Timer(60 * 1000) { AutoReset = true };
