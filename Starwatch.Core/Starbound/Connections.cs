@@ -492,6 +492,9 @@ namespace Starwatch.Starbound
                             //Make sure they have a valid username
                             await EnforceCharacterName(player);
                             OnPlayerConnect?.Invoke(player);
+
+                            //we should tell starwatch to restart because this only ever happens when the logs stop working
+                            await Server.Terminate("User joined without notice, dead logs.");
                         }
                         catch (Exception e)
                         {

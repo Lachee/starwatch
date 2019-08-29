@@ -453,7 +453,7 @@ namespace Starwatch.Starbound
                 //Handle the messages
                 Logger.Log("Handling Messages");
 
-                while (!_terminate)
+                while (!_terminate && !cancellationToken.IsCancellationRequested)
                 {
                     string[] logs = await _starbound.ReadStandardOutputAsync();
                     foreach(var l in logs)
@@ -461,6 +461,9 @@ namespace Starwatch.Starbound
                         _terminate = await ProcessLine(l);
                         if (_terminate) break;
                     }
+
+                    //wait some tiny amount of time
+                    await Task.Delay(100, cancellationToken);
                 }
 
                 //We have exited the loop, probably because we have been terminated
