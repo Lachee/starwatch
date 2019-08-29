@@ -400,27 +400,27 @@ namespace Starwatch.Starbound
                 if (!_process.HasExited)
                 {
                     //If we are linux, we have access to more powerful tools to make sure starbound terminates
-                    if (Environment.OSVersion.Platform == PlatformID.Unix)
-                    {
-                        try
-                        {
-                            //Just fucking murder it and every spawn of a child it may have
-                            var pkill = Process.Start(new ProcessStartInfo("/bin/bash", "pkill starbound")
-                            {
-                                UseShellExecute = true
-                            });
-
-                            //We can at least wait for pkill to finish too.
-                            pkill.WaitForExit();
-                        }
-                        catch(Exception e)
-                        {
-                            Logger.LogError("Failed to terminate with pkill: " + e.Message);
-                            _process.Kill();
-                            _process.WaitForExit();
-                        }
-                    }
-                    else
+                    //if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    //{
+                    //    try
+                    //    {
+                    //        //Just fucking murder it and every spawn of a child it may have
+                    //        var pkill = Process.Start(new ProcessStartInfo("/bin/bash", "pkill starbound")
+                    //        {
+                    //            UseShellExecute = true
+                    //        });
+                    //
+                    //        //We can at least wait for pkill to finish too.
+                    //        pkill.WaitForExit();
+                    //    }
+                    //    catch(Exception e)
+                    //    {
+                    //        Logger.LogError("Failed to terminate with pkill: " + e.Message);
+                    //        _process.Kill();
+                    //        _process.WaitForExit();
+                    //    }
+                    //}
+                    //else
                     {
                         //We are going to be good little boys and girls
                         _process.Kill();
