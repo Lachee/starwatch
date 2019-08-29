@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Collections.Concurrent;
 
 namespace Starwatch.Starbound
 {
@@ -19,6 +21,8 @@ namespace Starwatch.Starbound
         public static readonly bool ENFORCE_STRICT_NAMES = true;
         private static readonly Regex regexLoggedMsg = new Regex(@"'(.*)' as player '(.*)' from address ([a-zA-Z0-9.:]*)", RegexOptions.Compiled);
         private static readonly Regex regexClientMsg = new Regex(@"'(.*)' <(\d+)> \(([a-zA-Z0-9.:]*)\) (connected|disconnected)( for reason: (.*))?", RegexOptions.Compiled);
+
+        private SemaphoreSlim _playerSemaphore;
 
         public override int Priority => 0;
 
@@ -51,7 +55,7 @@ namespace Starwatch.Starbound
         /// </summary>
         public VPNValidator Validator { get; }
 
-        private Dictionary<int, Player> _connections = new Dictionary<int, Player>();
+        private ConcurrentDictionary<int, Player> _connections = new ConcurrentDictionary<int, Player>();
         private Dictionary<int, Session> _sessions = new Dictionary<int, Session>();
         private List<PendingPlayer> _pending = new List<PendingPlayer>();
         private struct PendingPlayer
@@ -69,7 +73,7 @@ namespace Starwatch.Starbound
         public event OnPlayerUpdateEvent OnPlayerConnect;
         public event OnPlayerDisconnectEvent OnPlayerDisconnect;
 
-        private Timer _uuidTimer;
+        private System.Timers.Timer _uuidTimer;
         
         public Connections(Server server) : base (server, "Connection")
         {
@@ -86,6 +90,13 @@ namespace Starwatch.Starbound
                 Logger.LogError(e, "Failed to create VPN Validator: {0}");
                 Validator = null;
             }
+
+            _playerSemaphore = new SemaphoreSlim(1, 1);
+        }
+        public override void Dispose()
+        {
+            _uuidTimer.Dispose();
+            _playerSemaphore.Dispose();
         }
 
         #region Events
@@ -249,7 +260,7 @@ namespace Starwatch.Starbound
                             };
 
                             //Add to the connections
-                            _connections.Add(connection, player);
+                            _connections.TryAdd(connection, player);
                             await CreateSessionAsync(player);
 
                             //Save the last seen date of the account.
@@ -302,7 +313,7 @@ namespace Starwatch.Starbound
                         }
 
                         //Remove the connection
-                        _connections.Remove(connection);
+                        _connections.TryRemove(connection, out _);
                         await RemoveSessionAsync(connection);
                     }
                 }
@@ -325,7 +336,7 @@ namespace Starwatch.Starbound
                 //Initialize the timer because its null
                 if (_uuidTimer == null)
                 {
-                    _uuidTimer = new Timer(1 * 60 * 1000) { AutoReset = true };
+                    _uuidTimer = new System.Timers.Timer(1 * 60 * 1000) { AutoReset = true };
                     _uuidTimer.Elapsed += async (sender, args) => await RefreshListing();
                 }
 
@@ -355,11 +366,22 @@ namespace Starwatch.Starbound
         #endregion
 
         #region Getters
-        public IEnumerable<Player> GetPlayersEnumerator() => _connections.Values;
+        /// <summary>
+        /// Enumerates over all the players
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Player> GetPlayersEnumerable() => _connections.Values;
+
         public IEnumerable<Session> GetSessionsEnumerator() => _sessions.Values;
-        public Player[] GetPlayers() => GetPlayersEnumerator().ToArray();
+
+        /// <summary>
+        /// Gets a copy of the player's array, garuantee to be thread safe.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Player> GetCopiedPlayersEnumerable() => _connections.ToArray().Select(s => s.Value);
+
         public Session[] GetSessions() => GetSessionsEnumerator().ToArray();
-        public int[] GetConnectionIDs() =>_connections.Keys.ToArray();
+                
         #endregion
 
         #region Helpers
@@ -476,7 +498,7 @@ namespace Starwatch.Starbound
                     }
                 }
 
-                _connections.Remove(connection);
+                _connections.TryRemove(connection, out _);
                 await RemoveSessionAsync(connection);
             }
 
@@ -493,7 +515,7 @@ namespace Starwatch.Starbound
                 };
 
                 //Add the new user
-                _connections.Add(kp.Value.Connection, player);
+                _connections.TryAdd(kp.Value.Connection, player);
                 await CreateSessionAsync(player);
 
                 try

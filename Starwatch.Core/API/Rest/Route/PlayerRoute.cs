@@ -12,7 +12,7 @@ namespace Starwatch.API.Rest.Route
         public PlayerRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
         public override RestResponse OnGet(Query query)
         {
-            var enumerator = Handler.Starbound.Connections.GetPlayersEnumerator();
+            var enumerator = Handler.Starbound.Connections.GetCopiedPlayersEnumerable();
 
             string username, nickname, accountname, uuid, location;
             bool admin;

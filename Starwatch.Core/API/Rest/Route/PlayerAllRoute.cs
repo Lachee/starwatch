@@ -27,7 +27,7 @@ namespace Starwatch.API.Rest.Route
             //if (!IsGateway && AuthenticationLevel < AuthLevel.SuperBot)
             //    return RestResponse.Forbidden;
 
-            var players = Starbound.Connections.GetPlayersEnumerator();
+            var players = Starbound.Connections.GetCopiedPlayersEnumerable();
             return new RestResponse(RestStatus.OK, res: players.ToArray());
         }
 

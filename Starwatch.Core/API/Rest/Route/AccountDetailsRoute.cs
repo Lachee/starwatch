@@ -125,7 +125,7 @@ namespace Starwatch.API.Rest.Route
                 this.Handler.ApiHandler.DisconnectAuthentication(auth, reason: "Authentication change");
 
                 //Logout anyone that previously connected
-                foreach (var player in Starbound?.Connections?.GetPlayersEnumerator().Where(p => p != null && p.AccountName != null && p.AccountName.Equals(Account.Name)))
+                foreach (var player in Starbound?.Connections?.GetCopiedPlayersEnumerable().Where(p => p != null && p.AccountName != null && p.AccountName.Equals(Account.Name)))
                     await player.Kick("Account details changed.");
 
                 //Apply the settings

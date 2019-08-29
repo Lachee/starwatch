@@ -14,7 +14,7 @@ namespace Starwatch.API.Rest.Route
         /// </summary>
         public override RestResponse OnGet(Query query)
         {
-            var worlds = Starbound.Connections.GetPlayersEnumerator()
+            var worlds = Starbound.Connections.GetCopiedPlayersEnumerable()
                 .Select(p => p.Location?.Whereami)
                 .Distinct()
                 .ToArray();

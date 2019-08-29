@@ -111,7 +111,7 @@ namespace Starwatch.Entities
                 return null;
 
             //Get the player linked with the author name. If it doesnt exist, return null.
-            var player = Server.Connections.GetPlayersEnumerator().FirstOrDefault(p => p.Username.Equals(this.Author));
+            var player = Server.Connections.GetPlayersEnumerable().FirstOrDefault(p => p.Username.Equals(this.Author));
             if (player == null) return null;
             
             //Get the session linked with the account name.

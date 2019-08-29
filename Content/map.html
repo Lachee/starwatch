@@ -54,7 +54,7 @@
 	var minimumOrbit = 0.1;
 	var orbitScale = 0.1;
 	var moonOrbitModifier = 0.25;
-	var logScaling = false;
+	var logScaling = true;
 	
 	
 	
@@ -248,8 +248,11 @@
 						
 						//Create our circle
 						var centerCoord = xy(centerX, centerY);
+						
+						//var dx = map.distance(xy(centerX, 0), xy(pos[0], 0)) * (1.113 * 100000);		
+						//var dy = map.distance(xy(0, centerY), xy(0, pos[1])) * (1.113 * 100000);		
 						var dist = map.distance(centerCoord, coord) * (1.113 * 100000);						
-						var ecllipse = L.ellipse(centerCoord, [dist, dist], 0, {
+						var ecllipse = L.ellipse(centerCoord, [dist, dist], 90, {
 							stroke: true,
 							weight: 1,
 							fill: false,

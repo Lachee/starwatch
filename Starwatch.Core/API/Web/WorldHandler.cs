@@ -173,7 +173,7 @@ namespace Starwatch.API.Web
                 }
 
                 //Make sure the world isn't loaded
-                if (API.Starwatch.Server.IsRunning && API.Starwatch.Server.Connections.GetPlayersEnumerator().Any(p => (p.Location?.Equals(world)).GetValueOrDefault(false)))
+                if (API.Starwatch.Server.IsRunning && API.Starwatch.Server.Connections.GetCopiedPlayersEnumerable().Any(p => (p.Location?.Equals(world)).GetValueOrDefault(false)))
                 {
                     args.Response.WriteRest(RestStatus.BadRequest, "World is in use.");
                     return true;
@@ -196,7 +196,7 @@ namespace Starwatch.API.Web
                 }
 
                 //Make sure the world isn't loaded
-                if (API.Starwatch.Server.IsRunning && API.Starwatch.Server.Connections.GetPlayersEnumerator().Any(p => (p.Location?.Equals(world)).GetValueOrDefault(false)))
+                if (API.Starwatch.Server.IsRunning && API.Starwatch.Server.Connections.GetCopiedPlayersEnumerable().Any(p => (p.Location?.Equals(world)).GetValueOrDefault(false)))
                 {
                     args.Response.WriteRest(RestStatus.BadRequest, "World is in use.");
                     return true;
