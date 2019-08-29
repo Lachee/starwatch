@@ -28,7 +28,9 @@ namespace Starwatch
         {
             Program program = new Program();
             program.RunStarwatch(args);
+
         }
+
 
         private Program()
         {

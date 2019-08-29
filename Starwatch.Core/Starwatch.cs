@@ -35,6 +35,18 @@ namespace Starwatch
             
             //Initialize the default logger
             this.Logger = new Logger("SWC");
+
+            //Setup the unhandled exception handler
+
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            currentDomain.UnhandledException += new UnhandledExceptionEventHandler(UnhandledExceptionHandler);
+        }
+
+        private void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
+        {
+            Logger.LogError("=== CRITICAL ERROR: UNHANDLED EXCEPTION ===");
+            Logger.LogError("Terminating: " + e.IsTerminating);
+            Logger.LogError(e.ExceptionObject as Exception, "Exception: {0}");
         }
 
         public async Task Run(CancellationToken cancellationToken)

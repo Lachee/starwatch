@@ -133,6 +133,7 @@ namespace Starwatch.Starbound
                     //We havn't reached the EOL yet, so lets do that
                     if (state == State.Running && charRead > 0 && last != '\n' && !_process.HasExited)
                     {
+                        Log("Waiting for EOL to continue");
                         string eol = _process.StandardOutput.ReadLine();
                         sb.Append(eol);
                     }
@@ -150,6 +151,7 @@ namespace Starwatch.Starbound
             finally
             {
                 //Finally kill the process, then release our semaphore.
+                Log("Exited Read Loop, aborting and releasing semaphore");
                 p_KillProcess();
                 this._threadSemaphore.Release();
             }
@@ -275,6 +277,8 @@ namespace Starwatch.Starbound
 
             Log("Killing finished");
             state = State.Offline;
+
+            Log("Invoking On Exit");
             Exited?.Invoke();
             return true;
         }

@@ -400,6 +400,8 @@ namespace Starwatch.Starbound
             _starbound = new SBProcess(path, WorkingDirectory, Logger.Child("SB"));
             _starbound.Exited += async () =>
             {
+                Logger.Log("SB Process has exited!");
+
                 //Tell us to terminate
                 _terminate = true;
 
