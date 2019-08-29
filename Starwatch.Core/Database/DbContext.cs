@@ -291,6 +291,10 @@ namespace Starwatch.Database
                 await cmd.ExecuteNonQueryAsync();
                 return cmd.LastInsertedId;
             }
+            catch(Exception)
+            {
+                return 0;
+            }
             finally
             {
                 ReleaseCommand();
@@ -493,16 +497,17 @@ namespace Starwatch.Database
             {
                 //We are still apparently connected, force close it if we can.
                 // We don't care for errors because we will handle them later anyways.
-                if (IsConnected)
-                    try { _connection.Close(); } catch (Exception) { }
+                //if (IsConnected)
+                //    try { _connection.Close(); } catch (Exception) { }
 
                 //Dispose of the connection and set it to null.
-                _connection.Dispose();
+                _connection?.Dispose();
                 _connection = null;
             }
 
             //Set our flag
             IsConnected = false;
+            Logger.Log("Done");
         }
 
 

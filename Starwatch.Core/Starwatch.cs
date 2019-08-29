@@ -105,7 +105,7 @@ namespace Starwatch
                 if (Server != null)
                 {
                     Logger.Log("Terminating and closing server...");
-                    await Server.Terminate("Cancellation Token was aborted");
+                    //await Server.Terminate("Cancellation Token was aborted");
                 }
 
                 //Terminate the API

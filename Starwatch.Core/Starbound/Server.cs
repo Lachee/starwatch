@@ -86,13 +86,11 @@ namespace Starwatch.Starbound
         /// <summary>
         /// Is the server currently running?
         /// </summary>
-        public bool IsRunning => ProcessExists && !_terminate && StartTime > EndTime;
+        public bool IsRunning => StartTime > EndTime;
 
         private bool _terminate = false;
-        public bool ProcessExists => _process != null;
-        private Process _process;
-        private System.Threading.CancellationTokenSource _processAbortTokenSource;
-        private System.Threading.SemaphoreSlim _processSemaphore = new System.Threading.SemaphoreSlim(1, 1);
+
+        private SBProcess _starbound;
 
         private List<Monitor> _monitors;
 
@@ -111,7 +109,6 @@ namespace Starwatch.Starbound
             Logger = new Logger("SERV", starwatch.Logger);
 
             Configurator = new Configurator(this, this.Logger.Child("CNF"));
-
         }
 
         /// <summary>
@@ -325,17 +322,7 @@ namespace Starwatch.Starbound
         /// <returns></returns>
         public async Task<MemoryUsage> GetMemoryUsageAsync()
         {
-            await _processSemaphore.WaitAsync();
-            try
-            {
-                //Create a new memory usage profile.
-                if (_process == null) return new MemoryUsage();
-                return new MemoryUsage(_process);
-            }
-            finally
-            {
-                _processSemaphore.Release();
-            }
+            throw new NotImplementedException();
         }
 
         public struct MemoryUsage
@@ -359,95 +346,8 @@ namespace Starwatch.Starbound
         {
             _terminate = true;
             LastShutdownReason = reason ?? LastShutdownReason;
-            if (_processAbortTokenSource != null)
-            {
-                Logger.Log("Terminating process (via token)");
-                _processAbortTokenSource.Cancel();
-            }
-            else
-            {
-                Logger.Log("Terminating process (via kill)");
-                await Kill();
-            }
         }
 
-        private async Task Kill()
-        {
-            Logger.Log("Killing the server, waiting for our turn at the semaphore...");
-            await _processSemaphore.WaitAsync();
-            try
-            {
-                Logger.Log("Killing the server, it is our turn!");
-                if (_process == null)
-                    return;
-
-                //Dispose the token
-                if (_processAbortTokenSource != null)
-                {
-                    Logger.Log("Disposing abort token source...");
-                    _processAbortTokenSource.Dispose();
-                    _processAbortTokenSource = null;
-                }
-
-                //Tell the process to stop throwing events
-                _process.EnableRaisingEvents = false;
-
-                Logger.Log("Reading All & Cancelling Reading...");
-                _process.CancelOutputRead();
-                //_process.CancelErrorRead();
-
-                Logger.Log("Killing & Waiting for process...");
-                if (!_process.HasExited)
-                {
-                    //If we are linux, we have access to more powerful tools to make sure starbound terminates
-                    //if (Environment.OSVersion.Platform == PlatformID.Unix)
-                    //{
-                    //    try
-                    //    {
-                    //        //Just fucking murder it and every spawn of a child it may have
-                    //        var pkill = Process.Start(new ProcessStartInfo("/bin/bash", "pkill starbound")
-                    //        {
-                    //            UseShellExecute = true
-                    //        });
-                    //
-                    //        //We can at least wait for pkill to finish too.
-                    //        pkill.WaitForExit();
-                    //    }
-                    //    catch(Exception e)
-                    //    {
-                    //        Logger.LogError("Failed to terminate with pkill: " + e.Message);
-                    //        _process.Kill();
-                    //        _process.WaitForExit();
-                    //    }
-                    //}
-                    //else
-                    {
-                        //We are going to be good little boys and girls
-                        _process.Kill();
-                        _process.WaitForExit();
-                    }
-                }
-
-                Logger.Log("Disposing of process...");
-                _process.Dispose();
-                _process = null;
-
-                Logger.Log("Process Disposed.");
-                EndTime = DateTime.UtcNow;
-
-                Logger.Log("Waiting some time for saftey...");
-                await Task.Delay(10000);
-            }
-            finally
-            {
-                Logger.Log("Done, finished killing the server.");
-                _processSemaphore.Release();
-            }
-
-            //save the settings
-            //We have no need to save the configuration now, it is generated on startup.
-            //await SaveConfigurationAsync(false);
-        }
 
         /// <summary>
         /// Runs the server, reading its input until its closed.
@@ -455,13 +355,6 @@ namespace Starwatch.Starbound
         /// <returns></returns>
 		public async Task Run(System.Threading.CancellationToken cancellationToken)
         {
-            //We cannot run because the process already exists
-            if (ProcessExists)
-            {
-                Logger.LogWarning("Cannot run process as it is already running");
-                return;
-            }
-
             //Make sure path exists
             string path = Path.Combine(WorkingDirectory, ExecutableName);
             if (!File.Exists(path))
@@ -479,9 +372,6 @@ namespace Starwatch.Starbound
                 Logger.LogError("Cannot start server as the configuration is invalid, but '{0}' does not exist", ConfigurationFile);
                 return;
             }
-
-            //string settingContents = File.ReadAllText(ConfigurationFile);
-            //Settings = JsonConvert.DeserializeObject<Settings>(settingContents, new Serializer.UserAccountsSerializer());
 
             //Update the start time statistics.
             StartTime = DateTime.UtcNow;
@@ -504,210 +394,103 @@ namespace Starwatch.Starbound
             Logger.Log("Saving Settings before launch...");
             await SaveConfigurationAsync();
 
-            if (string.IsNullOrEmpty(SamplePath))
+            #region Process Handling
+
+            //Destroy the rcon reference. We will replace it with a new one later.
+            Rcon = null;
+
+            if (_starbound != null)
             {
-                #region Process Handling
-                //Destroy the rcon reference. We will replace it with a new one later.
-                Rcon = null;
-
-                #region Create the process
-                await _processSemaphore.WaitAsync();
-                try
-                {
-                    //Create a new token source for canceling
-                    if (_processAbortTokenSource == null)
-                    {
-                        Logger.Log("Creating new abort token source...");
-                        _processAbortTokenSource = new System.Threading.CancellationTokenSource();
-                    }
-
-                    //Create the process
-                    Logger.Log("Creating new process...");
-                    _process = new Process()
-                    {
-                        StartInfo = new ProcessStartInfo()
-                        {
-                            WorkingDirectory = WorkingDirectory,
-                            FileName = path,
-                            RedirectStandardOutput = true,
-                            UseShellExecute = false
-                        }
-                    };
-                }
-                finally
-                {
-                    _processSemaphore.Release();
-                }
-                #endregion
-
-                //sstart of the process
-                Logger.Log("Staring Starbound Process");
-                LastShutdownReason = null;
-                bool success = _process.Start();
-                if (success)
-                {
-                    try
-                    {
-                        //Try and initialize the rcon.
-                        if (Configurator.RconServerPort > 0)
-                        {
-                            Rcon = new Rcon.StarboundRconClient(this);
-                            OnRconClientCreated?.Invoke(this, Rcon);
-                            Logger.Log("Created RCON Client.");
-                        }
-
-                        #region Invoke the start event
-                        foreach (var m in _monitors)
-                        {
-                            try
-                            {
-                                Logger.Log("OnServerStart :: {0}", m.Name);
-                                await m.OnServerStart();
-                            }
-                            catch (Exception e)
-                            {
-                                Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
-                            }
-                        }
-                        #endregion
-
-                        //Handle the messages
-                        Logger.Log("Handling Messages");
-
-                        //Generate a new token source
-                        _process.EnableRaisingEvents = true;
-                        _process.BeginOutputReadLine();
-                        _process.OutputDataReceived += async (sender, args) =>
-                        {
-                        //if we are terminating, just skip
-                        if (_terminate) return;
-
-                        //Process the line
-                        _terminate = await ProcessLine(args.Data);
-
-                        //Do terminate but don't wait for it
-                        if (_terminate) _ = Terminate();
-                        };
-
-                        _process.Exited += (sender, args) =>
-                        {
-                            Logger.Log("Process Exited. ");
-                            if (_processAbortTokenSource != null && !_processAbortTokenSource.IsCancellationRequested)
-                            {
-                                Logger.Log("Requesting closure of token");
-                                _processAbortTokenSource.Cancel();
-                            }
-                        };
-
-                        //Process already exited? Mustn't been a clean start
-                        if (_process.HasExited)
-                            await Terminate();
-
-                        //Do the cancel
-                        try { await Task.Delay(-1, _processAbortTokenSource.Token); } catch (TaskCanceledException) { }
-
-                        //We have exited the loop, probably because we have been terminated
-                        _process?.CancelOutputRead();
-                        Logger.Log("Left the read loop");
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(e, "CRITICAL ERROR IN RUNTIME: {0}");
-                        LastShutdownReason = "Critical Error: " + e.Message;
-                    }
-                }
-                else
-                {
-                    Logger.Log("Failed to start the starbound process for some reason.");
-                }
-                #endregion
+                Logger.Log("Cleaning up old process");
+                await _starbound.StopAsync();
+                _starbound.Dispose();
             }
-            else
+
+            //Start the process
+            _terminate = false;
+            _starbound = new SBProcess(path, WorkingDirectory, Logger.Child("SB"));
+            _starbound.Exited += async () =>
             {
-                #region Log Reading
-                //Invoke the start event
+                //Tell us to terminate
+                _terminate = true;
+
+                //Validate the shutdown message, setting default if there isnt one
+                LastShutdownReason = LastShutdownReason ?? "Server closed for unkown reason";
                 foreach (var m in _monitors)
                 {
                     try
                     {
-                        Logger.Log("OnServerStart :: {0}", m.Name);
-                        await m.OnServerStart();
+                        Logger.Log("OnServerExit {0}", m.Name);
+                        await m.OnServerExit(LastShutdownReason);
                     }
                     catch (Exception e)
                     {
-                        Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
+                        Logger.LogError(e, "OnServerExit ERR - " + m.Name + ": {0}");
                     }
                 }
+            };
 
-                Logger.Log("Reading Predefined Log");
-                var isFirstLine = true;
-                var startingTimespan = TimeSpan.MinValue;
-                var startingStopwatch = Stopwatch.StartNew();
+            Logger.Log("Staring Starbound Process");
+            LastShutdownReason = null;
+            _starbound.Start();
 
-                foreach (var line in File.ReadLines(SamplePath))
-                {
-                    if (line.Length < 15) continue;
-                    if (cancellationToken.IsCancellationRequested) break;
-
-                    var timestamp = "";
-                    var currentTimespan = startingTimespan;
-
-                    try
-                    {
-                        //Get the timespan, skip invalid lines.
-                        timestamp = line.Substring(1, 12);
-                        currentTimespan = TimeSpan.Parse(timestamp);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-
-                    if (isFirstLine)
-                    {
-                        isFirstLine = false;
-                        startingTimespan = currentTimespan;
-                    }
-
-                    //Difference between first and now
-                    var timespanDifference = currentTimespan - startingTimespan;
-                    var stopwatchDifference = (int)Math.Round(timespanDifference.TotalMilliseconds - startingStopwatch.ElapsedMilliseconds);
-
-                    //Wait a bit before processing hte line
-                    if (stopwatchDifference > 0)
-                        await Task.Delay(stopwatchDifference, cancellationToken);
-
-                    //Process the read line
-                    _terminate = await ProcessLine(line.Substring(15));
-
-                    //Break out of the reading
-                    if (_terminate) break;
-
-                    //Wait a bit
-                    //await Task.Delay(random.Next(SampleMinDelay, SampleMaxDelay));
-                }
-                Logger.Log("Finished reading prefined log");
-                #endregion
+            //Try and initialize the rcon.
+            if (Configurator.RconServerPort > 0)
+            {
+                Rcon = new Rcon.StarboundRconClient(this);
+                OnRconClientCreated?.Invoke(this, Rcon);
+                Logger.Log("Created RCON Client.");
             }
 
-            //Validate the shutdown message, setting default if there isnt one
-            LastShutdownReason = LastShutdownReason ?? "Server closed for unkown reason";            
+
+            #region Invoke the start event
             foreach (var m in _monitors)
             {
                 try
                 {
-                    Logger.Log("OnServerExit {0}", m.Name);
-                    await m.OnServerExit(LastShutdownReason);
+                    Logger.Log("OnServerStart :: {0}", m.Name);
+                    await m.OnServerStart();
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "OnServerExit ERR - " + m.Name + ": {0}");
+                    Logger.LogError(e, "OnServerStart ERR :: " + m.Name + " :: {0}");
                 }
             }
+            #endregion
+
+            try
+            {
+
+                //Handle the messages
+                Logger.Log("Handling Messages");
+
+                while (!_terminate)
+                {
+                    string[] logs = await _starbound.ReadStandardOutputAsync();
+                    foreach(var l in logs)
+                    {
+                        _terminate = await ProcessLine(l);
+                        if (_terminate) break;
+                    }
+                }
+
+                //We have exited the loop, probably because we have been terminated
+                Logger.Log("Left the read loop");
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "CRITICAL ERROR IN RUNTIME: {0}");
+                LastShutdownReason = "Critical Error: " + e.Message;
+            }
+            #endregion
             
             //We have terminated, so dispose of us properly
             Logger.Log("Attempting to terminate process just in case of internal error.");
-            await Kill();
+            await _starbound.StopAsync();
+
+            Logger.Log("Terminated Succesfully, disposing");
+            _starbound.Dispose();
+            _starbound = null;
         }
 
         /// <summary>
@@ -876,18 +659,10 @@ namespace Starwatch.Starbound
         {
             foreach (var m in _monitors) m.Dispose();
             _monitors.Clear();
-
-            if (_process != null)
+            if (_starbound != null)
             {
-                _process.Kill();
-                _process.Dispose();
-                _process = null;
-            }
-
-            if (_processSemaphore != null)
-            {
-                _processSemaphore.Dispose();
-                _processSemaphore = null;
+                _starbound.Dispose();
+                _starbound = null;
             }
         }
     }
