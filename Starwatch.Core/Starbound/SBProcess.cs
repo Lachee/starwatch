@@ -46,6 +46,8 @@ namespace Starwatch.Starbound
             this._queue = new Queue<string>(capacity);
         }
 
+        public MemoryUsage GetMemoryUsage() { return new MemoryUsage(_process); }
+
         /// <summary>Starts the process</summary>
         public void Start()
         {

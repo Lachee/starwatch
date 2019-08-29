@@ -320,21 +320,9 @@ namespace Starwatch.Starbound
         /// Gets the current memory profile.
         /// </summary>
         /// <returns></returns>
-        public async Task<MemoryUsage> GetMemoryUsageAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public Task<MemoryUsage> GetMemoryUsageAsync() { return Task.FromResult(_starbound.GetMemoryUsage()); }
 
-        public struct MemoryUsage
-        {
-            public long WorkingSet, PeakWorkingSet, MaxWorkingSet;
-            public MemoryUsage(Process process)
-            {
-                WorkingSet = process.WorkingSet64;
-                PeakWorkingSet = process.PeakWorkingSet64;
-                MaxWorkingSet = process.MaxWorkingSet.ToInt64();
-            }
-        }
+
         #endregion
 
         #region Running / Termination
@@ -342,10 +330,11 @@ namespace Starwatch.Starbound
         /// Forces the server to terminate. and waits for it to terminate.
         /// </summary>
         /// <returns></returns>
-        public async Task Terminate(string reason = null)
+        public Task Terminate(string reason = null)
         {
             _terminate = true;
             LastShutdownReason = reason ?? LastShutdownReason;
+            return Task.CompletedTask;
         }
 
 
