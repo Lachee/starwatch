@@ -26,6 +26,20 @@ namespace Starwatch.Entities
         [JsonProperty("Location")]
         public string Whereami { get => Location?.Whereami; set { Location = World.Parse(value); } }
 
+        public Player(Player player)
+        {
+            this.Server = player.Server;
+            this.Connection = player.Connection;
+            this.Username = player.Username;
+            this.Nickname = player.Nickname;
+            this.AccountName = player.AccountName;
+            this.UUID = player.UUID;
+            this.IP = player.IP;
+            this.IsAdmin = player.IsAdmin;
+            this.Location = player.Location;
+            this.IsVPN = player.IsVPN;
+        }
+
         public Player(Server server, int cid)
         {
             this.Server = server;
@@ -65,6 +79,10 @@ namespace Starwatch.Entities
         /// <returns></returns>
         public bool IsConnected() => Server.Connections.IsConnected(this);
 
-        
+        public override string ToString()
+        {
+            return $"${Connection} {Username} ({IP})";
+        }
+
     }
 }

@@ -32,7 +32,7 @@ namespace Starwatch
 
             //Initialize the region export directory
             PythonScriptsDirectory = Configuration.GetString("python_parsers", "Resources/py");
-
+            
             //Initialize the default logger
             this.Logger = new Logger("SWC");
         }

@@ -437,110 +437,71 @@ namespace Starwatch.Starbound
             //Make sure listing is enabled
             if (Server.Rcon == null) return false;
 
+            Logger.Log("Performing Listing Refresh");
+
             //Create a mapping of users and prepare some temporary array for additions and removals.
-            var listedUsers = (await Server.Rcon.ListAsync()).ToDictionary(l => l.Connection);
+            var listedUsers = await Server.Rcon.ListAsync();
             List<int> removals = new List<int>();
 
-            //Go through each listing adding elements and updating existing elements
-            foreach (var kp in _connections)
-            {
-                //Make sure its in the dictionary
-                Rcon.StarboundRconClient.ListedPlayer listing;
-                if (listedUsers.TryGetValue(kp.Key, out listing))
-                {
-                    //Update the UUID if nessary
-                    if (kp.Value.UUID != listing.UUID)
-                    {
-                        Logger.Log("User " + kp.Value.Username + " updated their uuid");
-                        kp.Value.UUID = listing.UUID;
-                        await UpdateSessionAsync(kp.Value);
+            Logger.Log("Fetched " + listedUsers.Length);
 
-                        try
+            //Go through each listing adding elements and updating existing elements
+            foreach (var lu in listedUsers)
+            {
+                Player player;
+                if (_connections.TryGetValue(lu.Connection, out player))
+                {
+                    if (player.UUID != lu.UUID)
+                    {
+                        Player newp = new Player(player) { UUID = lu.UUID };
+                        if (_connections.TryUpdate(lu.Connection, newp, player))
                         {
-                            //Invoke the events. This shouldn't have to many listeners to this.
-                            OnPlayerUpdate?.Invoke(_connections[kp.Value.Connection]);
+                            try
+                            {
+                                //Send the update event
+                                Logger.Log("Player Updated from RCON LIST: " + newp);
+                                OnPlayerUpdate?.Invoke(newp);
+                            }
+                            catch(Exception e)
+                            {
+                                Logger.LogError(e, "OnPlayerUpdate for RCON Exception: {0}");
+                            }
                         }
-                        catch (Exception e)
+                        else
                         {
-                            Logger.LogError(e, "OnPlayerUpdate(timmed) Exception: {0}", e);
+                            Logger.LogError("Failed to update connection: " + newp);
                         }
                     }
-
-                    //Remove the value so we dont hit it again
-                    listedUsers.Remove(kp.Key);
                 }
                 else
                 {
-                    //The user isnt in here so we will add them to our remove hashset.
-                    Logger.Log("User " + kp.Value.Username + " disappeared");
-                    removals.Add(kp.Key);
-                }
-
-                //Reset the timer (if it exists)
-                _uuidTimer?.Reset();
-            }
-
-            //Remove all the old people that are left in the list
-            foreach (int connection in removals)
-            {
-                //It was a disconnection, so find them in the list of players
-                Player player;
-                if (_connections.TryGetValue(connection, out player))
-                {
-                    try
+                    //Its a new connection.
+                    player = new Player(Server, lu.Connection)
                     {
-                        //Invoke the events. This shouldn't have to many listeners to this.
-                        OnPlayerDisconnect?.Invoke(player, "Not listed by server");
-                    }
-                    catch (Exception e)
+                        UUID = lu.UUID,
+                        Username = lu.Name
+                    };
+
+                    //Add it
+                    if (_connections.TryAdd(player.Connection, player))
                     {
-                        Logger.LogError(e, "OnPlayerDisconnect(timmed) Exception: {0}", e);
+                        try
+                        {
+                            Logger.Log("User " + player + " joined without us noticing.");
+
+                            //Make sure they have a valid username
+                            await EnforceCharacterName(player);
+                            OnPlayerConnect?.Invoke(player);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.LogError(e, "OnPlayerConnect for Sneaky Exception: {0}");
+                        }
                     }
                 }
 
-                _connections.TryRemove(connection, out _);
-                await RemoveSessionAsync(connection);
-            }
-
-            //Add all the new people that are left in the list
-            foreach (var kp in listedUsers)
-            {
-                //The user does not exist so we will add them
-                Logger.Log("User " + kp.Value.Name + " ( " + kp.Value.Connection + " ) joined without us noticing.");
-                var player = new Player(Server, kp.Value.Connection)
-                {
-                    Username = kp.Value.Name,
-                    UUID = kp.Value.UUID,
-                    IP = null
-                };
-
-                //Add the new user
-                _connections.TryAdd(kp.Value.Connection, player);
-                await CreateSessionAsync(player);
-
-                try
-                {
-                    //Invoke the events. This shouldn't have to many listeners to this.
-                    Logger.Log("Player Connected Sneaky: {0}", player);
-                    OnPlayerConnect?.Invoke(_connections[kp.Value.Connection]);
-
-                    //If we do not allow unkown connections, immediately kick them
-                    if (KickUnnoticedConnections)
-                    {
-                        //Kick em
-                        await player.Kick("Connection established without notice. Please try connecting again.");
-                    }
-                    else
-                    {
-                        //Make sure they have a valid username
-                        await EnforceCharacterName(_connections[kp.Value.Connection]);
-                    }
-
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e, "OnPlayerConnect(timmed) Exception: {0}", e);
-                }
+                //Update the sessions
+                await UpdateSessionAsync(player);
             }
 
             return true;
