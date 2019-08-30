@@ -115,6 +115,7 @@ namespace Starwatch.Starbound
                 //Whiel we are in a running state and have a process
                 while (state == State.Running && _process != null)
                 {
+                    /*
                     //Reset the string builder
                     sb.Clear();
 
@@ -143,7 +144,11 @@ namespace Starwatch.Starbound
 
                     //Enqueue the results
                     string result = sb.ToString();
-                    p_EnqueueContent(result);
+                    */
+
+                    string result = _process.StandardOutput.ReadLine();
+                    if (result != null && result.Length > 0) 
+                        p_EnqueueContent(result);
                 }
             }
             catch (Exception e)
