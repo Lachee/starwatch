@@ -590,6 +590,7 @@ namespace Starwatch.Starbound
             if (name.Contains(')')) return false;
             if (name.Contains('(')) return false;
             if (name.Contains(':')) return false;
+            if (name.Contains('\n')) return false;
 
             if (name.StartsWith("server")) return false;
             if (name.StartsWith("chat")) return false;
