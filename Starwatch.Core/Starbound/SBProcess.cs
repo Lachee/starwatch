@@ -103,7 +103,7 @@ namespace Starwatch.Starbound
             StringBuilder sb = new StringBuilder();
             int charRead = 0;
             int charAvailable = 0;
-            char[] buffer = new char[2048];
+            char[] buffer = new char[1024];
             char last = '-';
 
             this._threadSemaphore.Wait();
@@ -122,13 +122,16 @@ namespace Starwatch.Starbound
                     while (charAvailable > 0)
                     {
                         //Read the block and insert into our buffer
-                        charRead = _process.StandardOutput.ReadBlock(buffer, 0, charAvailable);
+                        int max = Math.Min(charAvailable, buffer.Length - 1);
+                        charRead = _process.StandardOutput.ReadBlock(buffer, 0, max);
                         sb.Append(buffer, 0, charRead);
                         charAvailable -= charRead;
 
                         last = charRead > 0 ? buffer[charRead - 1] : '-';
                     }
 
+                    if (charRead == 0)
+                        Log("Read 0 Characters!");
 
                     //We havn't reached the EOL yet, so lets do that
                     if (state == State.Running && charRead > 0 && last != '\n' && !_process.HasExited)
