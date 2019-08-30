@@ -438,6 +438,11 @@ namespace Starwatch.Starbound
             if (Server.Rcon == null) return false;
 
             Logger.Log("Performing Listing Refresh");
+            if (_connections.Count == 0)
+            {
+                Logger.Log("Skipping refresh because we have no connections.");
+                return false;
+            }
 
             //Create a mapping of users and prepare some temporary array for additions and removals.
             var listedUsers = await Server.Rcon.ListAsync();
@@ -481,6 +486,13 @@ namespace Starwatch.Starbound
                         UUID = lu.UUID,
                         Username = lu.Name
                     };
+
+                    //Skip the player if they are pending
+                    if (_pending.ToArray().Any(pp => pp.character == lu.Name))
+                    {
+                        Logger.Log("Skipping user " + player + " because they are pending.");
+                        continue;
+                    }
 
                     //Add it
                     if (_connections.TryAdd(player.Connection, player))
