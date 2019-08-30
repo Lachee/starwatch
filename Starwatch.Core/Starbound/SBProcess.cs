@@ -168,7 +168,7 @@ namespace Starwatch.Starbound
                 foreach (var p in TagRegex.Split(content))
                 {
                     //Regex gives us empties?
-                    string str = p.Trim();
+                    string str = p.Trim().Replace("\r", "\\r").Replace("\n", "\\n");
                     if (str.Length > 0)
                         this._queue.Enqueue(str);
                 }
