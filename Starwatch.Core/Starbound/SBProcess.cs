@@ -122,7 +122,7 @@ namespace Starwatch.Starbound
                     while (charAvailable > 0)
                     {
                         //Read the block and insert into our buffer
-                        int max = Math.Min(charAvailable - 1, buffer.Length);
+                        int max = Math.Min(charAvailable, buffer.Length);
                         charRead = _process.StandardOutput.ReadBlock(buffer, 0, max);
                         sb.Append(buffer, 0, charRead);
                         charAvailable -= charRead;
