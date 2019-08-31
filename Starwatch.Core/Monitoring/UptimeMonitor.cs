@@ -14,6 +14,8 @@ namespace Starwatch.Monitoring
         public long CurrentUptimeId => CurrentUptime != null ? CurrentUptime.Id : 0;
         public Uptime CurrentUptime { get; private set; }
 
+        public override int Priority => 11;
+
         private DropoutStack<string> _stack;
         public UptimeMonitor(Server server) : base(server, "Uptime")
         {

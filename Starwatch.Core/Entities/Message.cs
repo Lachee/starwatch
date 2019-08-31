@@ -35,6 +35,24 @@ namespace Starwatch.Entities
 
         public override string ToString() =>  $"[{Level}] "+ (IsChat ? $"<{Author}> " : " ") + $"{Content}";
 
+        /// <summary>
+        /// Tries to parse a message
+        /// </summary>
+        /// <param name="server"></param>
+        /// <param name="line"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static bool TryParse(Server server, string line, out Message message)
+        {
+            try { message = Parse(server, line); return true; } catch (System.Exception) { message = null; return false; }
+        }
+
+        /// <summary>
+        /// Parses a message
+        /// </summary>
+        /// <param name="server"></param>
+        /// <param name="line"></param>
+        /// <returns></returns>
         public static Message Parse(Server server, string line)
         {
             //Prepare the line
@@ -78,26 +96,31 @@ namespace Starwatch.Entities
                 int indexNameStart = 7;
                 int indexNameEnd = contents.IndexOf("> ");
 
-                string chat = contents.Substring(indexNameEnd + 2);
-                string author = contents.Substring(indexNameStart, indexNameEnd - indexNameStart);
+                if (indexNameEnd > 0 && indexNameEnd < contents.Length)
+                {
+                    //The end is within the bounds
+                    int indexChatStart = indexNameEnd + 2;
+                    string author = contents.Substring(indexNameStart, indexNameEnd - indexNameStart);
 
-                return new Message(server)
-                {
-                    Level = LogLevel.Chat,
-                    Content = chat,
-                    Author = author,
-                };
+                    //Check if the chat is within the bounds
+                    string chat = indexChatStart >= contents.Length ? "" : contents.Substring(indexChatStart);
+                    return new Message(server)
+                    {
+                        Level = LogLevel.Chat,
+                        Content = chat,
+                        Author = author,
+                    };
+                }
             }
-            else
+
+
+            //We are not a special chat condition, so just return what we have
+            return new Message(server)
             {
-                //We are not a special chat condition, so just return what we have
-                return new Message(server)
-                {
-                    Level = level,
-                    Content = contents,
-                    Author = null
-                };
-            }
+                Level = level,
+                Content = contents,
+                Author = null
+            };
         }
 
         /// <summary>

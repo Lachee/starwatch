@@ -474,7 +474,7 @@ namespace Starwatch.Starbound
             catch (Exception e)
             {
                 Logger.LogError(e, "CRITICAL ERROR IN RUNTIME: {0}");
-                LastShutdownReason = "Critical Error: " + e.Message;
+                LastShutdownReason = "Critical Error: " + e.Message + "\n" + e.StackTrace;
             }
             #endregion
             
