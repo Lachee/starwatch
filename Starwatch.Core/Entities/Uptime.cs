@@ -24,9 +24,7 @@ namespace Starwatch.Entities
             LastLog = "";
             Reason = "";
         }
-
-     
-
+             
         public async Task<bool> LoadAsync(DbContext db)
         {
             Uptime uptime = await db.SelectOneAsync<Uptime>(Table, (reader) =>
@@ -83,20 +81,27 @@ namespace Starwatch.Entities
         /// <returns></returns>
         public static async Task<int> EndAllAsync(DbContext db)
         {
-            var cmd = await db.CreateCommandAsync("UPDATE !uptime SET date_ended = CURRENT_TIMESTAMP WHERE date_ended IS NULL");
-            try
+            return await db.ExecuteNonQueryAsync("UPDATE !uptime SET date_ended = CURRENT_TIMESTAMP WHERE date_ended IS NULL");
+        }
+
+        /// <summary>
+        /// Gets the history of the uptime
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public static async Task<List<Uptime>> GetHistoryAsync(DbContext context, int count = 10)
+        {
+            return await context.ExecuteAsync<Uptime>("SELECT * FROM !uptime ORDER BY id DESC LIMIT " + count, (reader) =>
             {
-                if (cmd == null) return 0;
-                return await cmd.ExecuteNonQueryAsync();
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-            finally
-            {
-                db.ReleaseCommand();
-            }
+                Uptime uptime = new Uptime();
+                uptime.Id       = reader.GetInt64("id");
+                uptime.Started  = reader.GetDateTime("date_started");
+                uptime.Ended    = reader.GetDateTimeNullable("date_ended");
+                uptime.Reason   = reader.GetString("reason");
+                uptime.LastLog  = reader.GetString("last_log");
+                return uptime;
+            });
         }
     }
 }

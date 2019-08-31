@@ -65,7 +65,7 @@ namespace Starwatch.Extensions.Backup
 
             if (IsRolling)
             {
-                _lastRollingBackup = DateTime.Now;
+                _lastRollingBackup = DateTime.UtcNow;
                 _rollingBackups = new List<RollingBackup>();
                 foreach (var interval in _backupIntervals) _rollingBackups.Add(new RollingBackup(this, interval));
             }
@@ -78,7 +78,7 @@ namespace Starwatch.Extensions.Backup
             if (IsRolling) return;
 
             //Calculate the time since updates
-            TimeSpan delta = DateTime.Now - _lastRollingBackup;
+            TimeSpan delta = DateTime.UtcNow - _lastRollingBackup;
             int deltaMinutes = (int) Math.Floor(delta.TotalMinutes);
 
             //Go down the stack!
@@ -94,7 +94,7 @@ namespace Starwatch.Extensions.Backup
             }
 
             //Update the time we rolled last again
-            _lastRollingBackup = DateTime.Now;
+            _lastRollingBackup = DateTime.UtcNow;
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace Starwatch.Extensions.Backup
             
             //Copy the file
             File.Copy(source, dest, true);
-            LastBackup = DateTime.Now;
+            LastBackup = DateTime.UtcNow;
         }
         
 

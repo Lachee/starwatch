@@ -219,6 +219,22 @@ namespace Starwatch.Entities
             return db.ExecuteAsync<CelestialWorld>(query, FromDbDataReader, arguments);
         }
 
+        /// <summary>
+        /// Gets all the worlds from a system
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="system"></param>
+        /// <returns></returns>
+        public static Task<List<CelestialWorld>> SearchCoordinatesAsync(DbContext db, SystemWorld system)
+        {
+            return db.ExecuteAsync<CelestialWorld>("SELECT * FROM !worlds WHERE x = :x AND y = :y AND z = :z", FromDbDataReader, new Dictionary<string, object>()
+            {
+                ["x"] = system.X,
+                ["y"] = system.Y,
+                ["z"] = system.Z
+            });
+        }
+
         private static CelestialWorld FromDbDataReader(DbDataReader reader)
         {
             //Load from the data reader

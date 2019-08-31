@@ -1,5 +1,6 @@
 ﻿using WebSocketSharp.Net;
 using Starwatch.API.Util;
+using System.Threading.Tasks;
 
 namespace Starwatch.API.Rest.Util
 {
@@ -65,7 +66,7 @@ namespace Starwatch.API.Rest.Util
                     break;
                     
             }
-
+            
             response.WriteJson(rest);
         }
     }

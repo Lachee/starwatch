@@ -53,7 +53,6 @@ namespace Starwatch.API.Rest.Route
                 }
             }
 
-
             //If we have a player, update the ban information
             if (player != null)
             {
@@ -69,6 +68,9 @@ namespace Starwatch.API.Rest.Route
             //Update the moderator if required
             if (string.IsNullOrEmpty(ban.Moderator))
                 ban.Moderator = Authentication.Name;
+
+            //Apply the correct date time
+            ban.CreatedDate = DateTime.UtcNow;
 
             //Perform the ban and get the ban result
             var task = Starbound.Ban(ban);

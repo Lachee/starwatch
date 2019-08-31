@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Starwatch.Starbound;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -202,7 +203,7 @@ namespace Starwatch.Entities
         }
     }
 
-    public class SystemWorld : World
+    public partial class SystemWorld : World
     {
         /// <summary>
         /// The X coordinate
@@ -239,6 +240,16 @@ namespace Starwatch.Entities
         public override string FileExtension => ".system";
         public override string Filename => $"{X}_{Y}_{Z}.system";
         public override string Whereami => $"{X}:{Y}:{Z}";
+
+        public override int GetHashCode() => Whereami.GetHashCode();
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null) return false;
+            if (obj is SystemWorld world)
+                return this.X == world.X && this.Y == world.Y && this.Z == world.Z;
+            return false;
+        }
     }
 
     public class ClientShipWorld : World

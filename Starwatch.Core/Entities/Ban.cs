@@ -39,6 +39,13 @@ namespace Starwatch.Entities
             set => CreatedDate = value.ToDateTime();
         }
 
+        [JsonProperty("expiresAt", NullValueHandling = NullValueHandling.Ignore)]
+        private long? _expiresAt
+        {
+            get => ExpiryDate?.ToUnixEpoch();
+            set => ExpiryDate = value?.ToDateTime();
+        }
+
         /// <summary>
         /// The time the ban started
         /// </summary>
