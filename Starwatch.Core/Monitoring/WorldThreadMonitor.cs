@@ -10,15 +10,18 @@ namespace Starwatch.Monitoring
     class WorldThreadMonitor : ConfigurableMonitor
     {
         public const string ERROR_MESSAGE = "WorldServerThread exception caught handling incoming packets for client";
-        public string BanFormat => Configuration.GetString("ban_format",
+        public string BanFormat => 
 @"^orange;You have been banned ^white;automatically ^orange;for causing a world exception.
 ^red;{exception}
 
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/request/");
+^pink;https://iLoveBacons.com/request/";
 
+        public string KickFormat =>
+@"^orange;You have been kicked for causing a world exception.
+^red;{exception}";
 
         public override int Priority => 50;
 
@@ -62,7 +65,8 @@ namespace Starwatch.Monitoring
                         {
                             //ban the players
                             report.Player = player;
-                            await Server.Ban(player, BanFormat.Replace("{exception}", exception), "WorldThreadMonitor", false, false);
+                            await Server.Kick(player, KickFormat.Replace("{exception}", exception));
+                            //await Server.Ban(player, BanFormat.Replace("{exception}", exception), "WorldThreadMonitor", false, false);
                         }
                     }
                     else
