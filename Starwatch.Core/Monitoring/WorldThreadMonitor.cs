@@ -75,10 +75,10 @@ namespace Starwatch.Monitoring
                     {
                         if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
                         return report;
-                    }, "OnWorldThreadCrash");
+                    }, "OnWorldThreadException");
 
                     //Throw the exception, forcing shutdown
-                    throw new ServerShutdownException("World Thread Exception");
+                    //throw new ServerShutdownException("World Thread Exception");
                 }
             }
             catch (Exception e)
