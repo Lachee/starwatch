@@ -11,7 +11,7 @@ namespace Starwatch.Starbound.Rcon
         public event RconEventHandler OnKick;
         public event RconEventHandler OnBan;
         public event RconEventHandler OnBroadcast;
-        
+
         public Server Server { get; }
         public Logger Logger { get; }
 
@@ -61,7 +61,7 @@ namespace Starwatch.Starbound.Rcon
         }
 
         /// <summary>
-        /// Kicks a connection from the server. 
+        /// Kicks a connection from the server.
         /// </summary>
         /// <param name="connection">The connection to kick</param>
         /// <param name="reason">The reason to kick the connection.</param>
@@ -126,11 +126,11 @@ namespace Starwatch.Starbound.Rcon
             }
 
             //No accounts listed
-            if (!rcon.Message.Contains(":")) return new ListedPlayer[0];
+            if (!rcon.Message.StartsWith("$") || !rcon.Message.Contains("$")) return new ListedPlayer[0];
 
-            //Split it from newlines. 
-            string[] lines = rcon.Message.Split('\n');
-            ListedPlayer[] players = new ListedPlayer[lines.Length];
+            //Split it from newlines.
+            string[] lines = rcon.Message.Split("\n");
+            List<ListedPlayer> players = new List<ListedPlayer>();
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -142,19 +142,22 @@ namespace Starwatch.Starbound.Rcon
                 }
 
                 //Working from the end, we know the UUID will always be 32, so we can calculate where it will be
-                int lastBreak = lines[i].Length - 35;  
+                int lastBreak = lines[i].Length - 35;
 
-                //Create the player object by splitting up the components. Regex is for cowards.
-                players[i] = new ListedPlayer()
+                //Sanity check: if this is less than 0 this is a bogus entry.
+                if (lastBreak - firstBreak - 4 < 0 || firstBreak - 2 < 0) continue;
+                
+                //Create the player object by splitting up the components.
+                players.Add( new ListedPlayer()
                 {
                     Name = lines[i].Substring(firstBreak + 2, lastBreak - firstBreak - 4),
                     UUID = lines[i].Substring(lastBreak + 3),
                     Connection = int.Parse(lines[i].Substring(1, firstBreak - 2))
-                };
+                });
             }
 
             //Parse the players
-            return players;
+            return players.ToArray();
         }
 
         /// <summary>
