@@ -109,7 +109,7 @@ namespace Starwatch.Starbound
                 if (msg.Content.StartsWith("/nick"))
                 {
                     string content = msg.Content.Trim();
-                    string nickname = content.Length < 6 ? " " : msg.Content.Substring(6);
+                    string nickname = content.Length <= 6 ? " " : msg.Content.Substring(6);
                     Player player = _connections.Values.Where(p => p.Username.Equals(msg.Author)).First();
                     if (player != null)
                     {
