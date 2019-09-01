@@ -12,6 +12,8 @@ namespace Starwatch.Monitoring
         public const string ERROR_MESSAGE = "WorldServerThread exception caught handling incoming packets for client";
         public string BanFormat => Configuration.GetString("ban_format",
 @"^orange;You have been banned ^white;automatically ^orange;for causing a world exception.
+^red;{exception}
+
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
 ^blue;Please make an appeal at
@@ -41,6 +43,7 @@ namespace Starwatch.Monitoring
                     //Attempt to find the person
                     var coloni = msg.Content.IndexOf(':');
                     var client = msg.Content.Cut(ERROR_MESSAGE.Length + 1, coloni);
+                    var exception = msg.Content.Substring(coloni);
                     var report = new DisagreementCrashReport() { Content = msg.ToString() };
 
                     //Parse the name
@@ -59,7 +62,7 @@ namespace Starwatch.Monitoring
                         {
                             //ban the players
                             report.Player = player;
-                            await Server.Ban(player, BanFormat, "disagrement-monitor", false, false);
+                            await Server.Ban(player, BanFormat.Replace("{exception}", exception), "WorldThreadMonitor", false, false);
                         }
                     }
                     else
@@ -72,10 +75,10 @@ namespace Starwatch.Monitoring
                     {
                         if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
                         return report;
-                    }, "OnDisagreementCrash");
+                    }, "OnWorldThreadCrash");
 
                     //Throw the exception, forcing shutdown
-                    throw new ServerShutdownException("Disagreement Exception");
+                    throw new ServerShutdownException("World Thread Exception");
                 }
             }
             catch (Exception e)
