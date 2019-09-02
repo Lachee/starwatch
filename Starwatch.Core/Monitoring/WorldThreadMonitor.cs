@@ -37,7 +37,10 @@ namespace Starwatch.Monitoring
 
         public override async Task<bool> HandleMessage(Message msg)
         {
-            //if (msg.Level != Message.LogLevel.Error) return false;
+            if (msg.Level != Message.LogLevel.Error) return false;
+
+            //Prepare the report
+            DisagreementCrashReport report = null;
 
             try
             {
@@ -47,58 +50,82 @@ namespace Starwatch.Monitoring
                     var coloni = msg.Content.IndexOf(':');
                     var client = msg.Content.Cut(ERROR_MESSAGE.Length + 1, coloni);
                     var exception = msg.Content.Substring(coloni);
-                    var report = new DisagreementCrashReport() { Content = msg.ToString() };
+                    report = new DisagreementCrashReport() { Content = msg.ToString(), Exception = exception.Trim() };
 
                     //Parse the name
                     if (int.TryParse(client, out var cid))
                     {
                         //Find the player
-                        Player player = Server.Connections.GetPlayer(cid);
-                        if (player == null)
+                        report.Player = Server.Connections.GetPlayer(cid);
+                        if (report.Player == null)
                         {
                             Logger.LogWarning("Could not find the person we were holding accountable! Using last person instead.");
-                            player = Server.Connections.LastestPlayer;
+                            report.Player = Server.Connections.LastestPlayer;
                         }
 
-                        //Make sure we actually have a player before continuing the ban spree.
-                        if (player != null)
+                        //If we have a player, we need to determine best course of action
+                        if (report.Player != null)
                         {
-                            //ban the players
-                            report.Player = player;
-                            await Server.Kick(player, KickFormat.Replace("{exception}", exception));
-                            //await Server.Ban(player, BanFormat.Replace("{exception}", exception), "WorldThreadMonitor", false, false);
+                            //World thread exception caught
+                            if (report.Exception.Contains("(MapException) Key "))
+                            {
+                                //Ban the player
+                                await report.Player.Ban(BanFormat.Replace("{exception}", report.Exception), "World Thread Monitor");
+
+                                //Send the report
+                                throw new ServerShutdownException("World Thread Exception - Key Crash");
+                            }
+
+                            //Regular exception caught, just kick the player and return early so we don't process the other reboot logic
+                            await report.Player.Kick(KickFormat.Replace("{kick}", report.Exception));
+                            return false;
                         }
                     }
                     else
                     {
+                        //We didn't parse anything?
                         Logger.LogWarning("Failed to parse the client " + client + ", giving up and just aborting.");
                     }
 
-                    //Send a API log to the error
-                    Server.ApiHandler.BroadcastRoute((gateway) =>
-                    {
-                        if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
-                        return report;
-                    }, "OnWorldThreadException");
-
-                    //Throw the exception, forcing shutdown
-                    //throw new ServerShutdownException("World Thread Exception");
+                    //We have no user crashing us, so we will throw a general exception to get the server to reboot
+                    throw new ServerShutdownException("World Thread Exception - General Error");
                 }
             }
             catch (Exception e)
             {
-                //Throw an error and just abort by default.
+                //Our logic threw an exception, most likely a ServerShutdownException. Lets abort and restart the server.
                 Logger.LogError(e);
-                Server.LastShutdownReason = $"Disagreement Shutdown ("+e.GetType().Name+"): {e.Message}\n" + e.StackTrace;
+                Server.LastShutdownReason = $"Disagreement Shutdown ({e.GetType().Name}): {e.Message}\n" + e.StackTrace;
                 return true;
             }
+            finally
+            {
+                //Broadcast the report if it isn't null
+                if (report != null)
+                    BroadcastReport(report);
+            }
 
+            //We don't want to restart.
             return false;
         }
 
-        struct DisagreementCrashReport
+        private void BroadcastReport(DisagreementCrashReport report)
+        {
+            if (report == null) return;
+
+            //Abort and giveup
+            //Send a API log to the error
+            Server.ApiHandler.BroadcastRoute((gateway) =>
+            {
+                if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
+                return report;
+            }, "OnWorldThreadException");
+        }
+
+        class DisagreementCrashReport
         {
             public string Content { get; set; }
+            public string Exception { get; set; }
             public Player Player { get; set; }
         }
     }
