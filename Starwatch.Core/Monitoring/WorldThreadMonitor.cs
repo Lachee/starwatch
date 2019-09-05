@@ -76,6 +76,9 @@ namespace Starwatch.Monitoring
                                 throw new ServerShutdownException("World Thread Exception - Key Crash");
                             }
 
+                            if (report.Exception.Contains("(IOException)"))
+                                throw new ServerShutdownException("World Thread Exception - IO Exception");
+
                             //Regular exception caught, just kick the player and return early so we don't process the other reboot logic
                             await report.Player.Kick(KickFormat.Replace("{kick}", report.Exception));
                             return false;

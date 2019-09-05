@@ -50,54 +50,25 @@
 </body>
 
 <script>
-	var scale = 0.5;
-	var minimumOrbit = 0.1;
-	var orbitScale = 0.1;
-	var moonOrbitModifier = 0.25;
-	var logScaling = true;
-	
-	
-	
-	
+	var pixelScale 	= 0.01;
+	var pixelZoom 	= 1;
+	var orbitScale 	= 0.3;
+	var moonScale 	= 0.25 * orbitScale;
+
 	//END CONFIG
 //https://github.com/jdfergason/Leaflet.Ellipse/blob/master/l.ellipse.js
 //https://leafletjs.com/examples/crs-simple/crs-simple.html
 //https://github.com/Leaflet/Leaflet.markercluster#options
-	if (!logScaling) 
-	{
-		scale /= 10;
-		minimumOrbit /= 10;
-		orbitScale /= 10;
-		moonOrbitModifier /= 10;
-	}
-		
-	function s(v) {  return !logScaling ? v : (v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v)); }
-	
-	
-	var yx = L.latLng;
-	var xy = function(x, y) 
-	{
-		let x2 = x;
-		let y2 = y;
-		if (L.Util.isArray(x)) 
-		{
-			// We are doing xy([x, y]);    
-			x2 = x[0];
-			y2 = x[1];
-		}
-		
-		//Apply scales
-		x2 = s(x2) * scale;
-		y2 = s(y2) * scale;
-		
-		//Return the response
-		return yx(y2, x2);  // When doing xy(x, y);
-	};
 
-	var rcircle = function(x, y, r)
+
+	function s(v) {  return !logScaling ? v : (v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v)); }
+	var randomPointOnCircle = function(point, r)
 	{
 		var angle = Math.random()*Math.PI*2
-		return [ x + (Math.cos(angle) * r), y + (Math.sin(angle) * r)]
+		var x = (Math.cos(angle) * r);
+		var y = (Math.sin(angle) * r);
+		var cp = L.point(x, y);
+		return point.add(cp);
 	}
 
 	var StarIcon = L.Icon.extend({
@@ -133,19 +104,7 @@
 		crs: L.CRS.Simple,
 		minZoom: -3
 	});
-
-	L.LatLng.prototype.distanceToCRSSimple = function(other) {
-		other = L.latLng(other);
-		var lngS = 0, latS = 0;
-
-		lngS = other.lng - this.lng;
-		lngS = lngS * lngS;
-
-		latS = other.lat - this.lat;
-		latS = latS * latS;
-
-		return Math.sqrt(lngS + latS);
-	};
+	
 
 	map.on('zoomend', function(ev){
 	  if (map.getZoom() < 13) 
@@ -183,15 +142,21 @@
 
 	function getSystemPopup(x, y, isLocalView)
 	{
-		let coord = x + ", " + y;
+		let coord = x + ',' + y;
 		let txt = "System " + coord;
 		if (!isLocalView)
-			txt += "<br><a href='#" + coord + "' onclick='flyToCoordinate(map, " + coord + ");'>Fly To</a>";
+			txt += "<br><a href='#" + coord + "' onclick='flyToCoordinate(" + coord + ");'>Fly To</a>";
 		return txt;
 	}
 
-	getWorlds(map);
-	function getWorlds(map)
+	function getOrbitPoint(center, no, scale)
+	{
+		var radius = scale + (no * scale);
+		return randomPointOnCircle(center, radius);
+	}
+
+	getWorlds();
+	function getWorlds()
 	{
 		const Http = new XMLHttpRequest();
 		const url='https://sb.ilovebacons.com:4242/api/world/search?systems';
@@ -201,82 +166,96 @@
 		Http.onreadystatechange = (e) => {
 			if (Http.readyState == 4 && Http.status == 200)
 			{
+				systemLayer.clearLayers();
+				orbitLayer.clearLayers();
+				starLayer.clearLayers();
+
 				var response = JSON.parse(Http.responseText);
 				console.log(response.Response);
 				for(var key in response.Response)
 				{
-					var scoord = null;
-					var planets = [];
+					var xystr = key.split(',');
+					var system_pixels = L.point(Number(xystr[0].trim()), Number(xystr[1].trim()));
+
+					console.log(key, system_pixels);
+					var system_coordinate = map.options.crs.pointToLatLng(system_pixels.multiplyBy(pixelScale), pixelZoom);					
+					var planet_pixels = [];
+
 					for(var i in response.Response[key]) 
 					{
 						var world = response.Response[key][i];
+						var center = system_pixels;
+						var position = null;
+						var coordinate = null;
+						var center_coordinate = null;
 						
-						if (scoord == null)
-							scoord = xy(world.X, world.Y);
-						
-						var radius = minimumOrbit + world.Planet * orbitScale;
-						var centerX = world.X;
-						var centerY = world.Y;
-						
-							
 						if (world.IsMoon)
 						{
 							//Generate coordinates in advance for ourself
-							if (planets[world.Planet] == null)
-								planets[world.Planet] = rcircle(centerX, centerY, radius);
+							if (planet_pixels[world.Planet] == null)
+								planet_pixels[world.Planet] = getOrbitPoint(system_pixels, world.Planet, orbitScale);
 							
 							//Base our center point of the planet
-							centerX = planets[world.Planet][0];
-							centerY = planets[world.Planet][1];	
-							
-							//Recalculate the radius
-							radius = (minimumOrbit + world.Moon * orbitScale) * moonOrbitModifier;
+							center = planet_pixels[world.Planet];
+							position = getOrbitPoint(center, world.Moon, moonScale);
+						}
+						else
+						{
+							center = system_pixels;
+							position = getOrbitPoint(center, world.Planet, orbitScale);
+							planet_pixels[world.Planet] = position;
 						}
 						
-						//Generate coordinates
-						var pos = rcircle(centerX, centerY, radius);
-						
-						//Update our position so any moons can use it
-						if (!world.IsMoon)
-							planets[world.Planet] = pos;
 						
 						//Calculate our laglong
-						var coord = xy(pos[0], pos[1]);
+						//console.log(position, position.multiplyBy(pixelScale));
+						coordinate = map.options.crs.pointToLatLng(position.multiplyBy(pixelScale), pixelZoom);
+						center_coordinate = map.options.crs.pointToLatLng(center.multiplyBy(pixelScale), pixelZoom);
 						
 						//Create our marker
-						var marker = L.marker(coord, {icon: world.Details.TerrainSize == 'large' ? largePlanetIcon : smallPlanetIcon}).bindPopup(getPopup(world));
+						var marker = L.marker(coordinate, {icon: world.Details.TerrainSize == 'large' ? largePlanetIcon : smallPlanetIcon}).bindPopup(getPopup(world));
 						
-						//Create our circle
-						var centerCoord = xy(centerX, centerY);
 						
 						//var dx = map.distance(xy(centerX, 0), xy(pos[0], 0)) * (1.113 * 100000);		
 						//var dy = map.distance(xy(0, centerY), xy(0, pos[1])) * (1.113 * 100000);		
-						var dist = map.distance(centerCoord, coord) * (1.113 * 100000);						
-						var ecllipse = L.ellipse(centerCoord, [dist, dist], 90, {
+						//var dist = map.distance(centerCoord, coord) * (1.113 * 100000);	
+						
+						var distance = map.options.crs.distance(coordinate, center_coordinate);
+						console.log("Eclipse: ", center_coordinate, distance)
+						var ecllipse = L.circle(center_coordinate, {
+							radius: distance,
 							stroke: true,
 							weight: 1,
 							fill: false,
 							color: '#e3e3e33a',
 							bubblingMouseEvents: false
 						});
+						//);
 						systemLayer.addLayer(marker);
 						orbitLayer.addLayer(ecllipse);
 					}
 						
-					if (scoord != null) {
-						systemLayer.addLayer(L.marker(scoord, { icon: blueStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, true)));
-						starLayer.addLayer(L.marker(scoord, { icon: giantStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, false)));
-					}
+					systemLayer.addLayer(L.marker(system_coordinate, { icon: blueStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, true)));
+					starLayer.addLayer(L.marker(system_coordinate, { icon: giantStarIcon }).bindPopup(getSystemPopup(world.X, world.Y, false)));
 				}
 				
+				//Add star layer
 				map.addLayer(starLayer);
-				map.flyTo([-0.35, 0.42], 10);
+
+				//Fly to a specific coordinate
+				let url = window.location.href.split('#');
+				if (url.length == 2) { 
+					let urlxy = url[1].split(',');
+					if (urlxy.length == 2) 
+						flyToCoordinate(Number(urlxy[0].trim()), Number(urlxy[1].trim()));
+					else
+					flyToCelestial(url[1]);
+				}
 			}
-			
 		}
 	}
 	
-	function locatePlayer(map, connection)
+	function locatePlayer(connection)
 	{
 		const Http = new XMLHttpRequest();
 		const url='https://sb.ilovebacons.com:4242/api/player/' + connection + '?enforce=true';
@@ -288,12 +267,12 @@
 			{
 				var response = JSON.parse(Http.responseText);
 				console.log(response.Response);
-				flyToCelestial(map, response.Response.Location);
+				flyToCelestial(response.Response.Location);
 			}
 		}
 	}
 	
-	function flyToCelestial(map, celestial)
+	function flyToCelestial(celestial)
 	{
 		const Http = new XMLHttpRequest();
 		const url='https://sb.ilovebacons.com:4242/api/world/' + celestial;
@@ -305,24 +284,24 @@
 			{
 				var response = JSON.parse(Http.responseText);				
 				var world = response.Response;
-				var coord = xy(world.X, world.Y);
-				map.flyTo(coord, 4);
+				flyToCoordinate(world.X, world.Y);
 			}
 		}
 	}
 
-	function flyToCoordinate(map, x, y) { 
+	function flyToCoordinate(x, y) { 
 		$('input#x').val(x);
 		$('input#y').val(y);
-		var coord = xy(x, y);
+		var coord = map.options.crs.pointToLatLng(L.point(x, y ).multiplyBy(pixelScale), pixelZoom);
 		map.flyTo(coord, 14);
+		window.location = '#' + x + ',' + y;
 	}
 
 	function flyToInput()
 	{
 		let x = $('input#x').val();
 		let y = $('input#y').val();
-		flyToCoordinate(map, x, y);
+		flyToCoordinate(x, y);
 	}
 
 </script>
