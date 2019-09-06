@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Starwatch.Extensions.Whitelist
+namespace Starwatch.Modules.Whitelist
 {
     public class ListedAccount : IRecord
     {

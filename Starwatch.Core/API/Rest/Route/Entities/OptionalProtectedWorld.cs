@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Starwatch.Extensions.Whitelist;
+using Starwatch.Modules.Whitelist;
 using System.Collections.Generic;
 
 namespace Starwatch.API.Rest.Route.Entities

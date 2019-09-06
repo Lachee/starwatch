@@ -123,8 +123,18 @@ namespace Starwatch.Entities
             public async Task<bool> LoadAsync(DbContext db)
             {
                 //TODO: Re-Enable
-                var details = await db.SelectOneAsync<Metadata>(Table, LoadFromDbDataReader, new Dictionary<string, object>() { { "whereami", Whereami } });
+                var details = await db.SelectOneAsync<Metadata>(Table, LoadFromDbDataReader, new Dictionary<string, object>() { ["whereami"]  = Whereami });
                 return details != default(Metadata);
+            }
+
+            /// <summary>
+            /// Deletes the details
+            /// </summary>
+            /// <param name="db"></param>
+            /// <returns></returns>
+            public async Task<bool> DeleteAsync(DbContext db)
+            {
+                return await db.DeleteAsync(Table, new Dictionary<string, object>() { ["whereami"] = Whereami });
             }
 
             /// <summary>
@@ -298,6 +308,21 @@ namespace Starwatch.Entities
 
             //Return the details.
             return Details;
+        }
+
+        public async Task<bool> DeleteDetailsAsync(Server server, DbContext db = null, bool deleteFile = true)
+        {
+            //Prepare the details
+            Details = new Metadata(this);
+            if (await Details.DeleteAsync(db ?? server.DbContext))
+            {
+                string filepath = Path.Combine(server.StorageDirectory, "universe/", JsonFilename);
+                if (deleteFile && File.Exists(filepath)) File.Delete(filepath);
+                return true;
+            }
+
+            //We failed
+            return false;
         }
 
         //public async Task<bool> SaveDetailsAsync(DbContext db )

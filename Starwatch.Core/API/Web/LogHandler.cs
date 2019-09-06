@@ -1,5 +1,6 @@
 ﻿using Starwatch.API.Util;
 using Starwatch.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -39,17 +40,19 @@ namespace Starwatch.API.Web
                 return true;
             }
 
-            //We are requesting the root directory.
+
+            // 0    1    2
+            // api/ log/ 1/
+            //We are requesting a specific log
             if (args.Request.Url.Segments.Length >= 3)
             {
                 //If we are search then do a handle search
                 Query query = new Query(args.Request);
-                if (query.ContainsKey("regex"))     HandleSearchRequest(method, args, auth, query);
-                else                                HandleFileRequest(method, args, auth);
-
+                HandleFileRequest(method, args, auth, query.GetString("regex", null), query.GetInt("onion", 10));
                 return true;
             }
             
+            //We are to show the directory listing instead.
             if (ShowListing)
             {
                 HandleDirectoryRequest(method, args, auth);
@@ -77,7 +80,7 @@ namespace Starwatch.API.Web
             args.Response.WriteText(html.ToString(), ContentType.HTML);
         }
 
-        private void HandleFileRequest(RequestMethod method, HttpRequestEventArgs args, Authentication auth)
+        private void HandleFileRequest(RequestMethod method, HttpRequestEventArgs args, Authentication auth, string pattern = null, int onion = 10)
         {
             //Get which log we are accessing and store the action
             string log = args.Request.Url.Segments[2];
@@ -96,62 +99,55 @@ namespace Starwatch.API.Web
                 return;
             }
 
-            //Return the file with a ReadWrite share.
-            args.Response.WriteFile(path, FileShare.ReadWrite);
+            if (string.IsNullOrEmpty(pattern))
+            {
+                //We we have no pattern, then just return the file contents directly
+                args.Response.WriteFile(path, FileShare.ReadWrite);
+            }
+            else
+            {
+                //Lets scan each file and return its response
+                //We are incrementing our rate limit twice because its an expensive operation.
+                Logger.Log(auth + " search log " + log + " with '" + pattern + "'");
+                auth.RecordAction($"log:{log}:search:{log}");
+                auth.IncrementRateLimit();
+
+                string content = ScanFile(path, pattern, onion);
+                args.Response.WriteText(content, ContentType.HTML);
+            }
         }
 
-        private void HandleSearchRequest(RequestMethod method, HttpRequestEventArgs args, Authentication auth, Query query)
+        /// <summary>
+        /// Scans a file, producing a XML Table of matches, with onions.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="pattern"></param>
+        /// <param name="onion"></param>
+        /// <returns></returns>
+        private string ScanFile(string file, string pattern, int onion)
         {
-            string search = query.GetString("regex", "\\w*");
-            string log = query.GetString("log", "0");
-
-            //Doubling up because this is an expensive action!
-            auth.RecordAction($"log:{log}:search:{search}");
-            auth.IncrementRateLimit();
-
-            Logger.Log(auth + " search log " + log + " with '"+ search +"'");
-
             //Create the regex
-            Regex regex = new Regex(search);
+            Regex regex = new Regex(pattern);
+            StringBuilder html = new StringBuilder("<matches>");
 
-            //Generate the path, appending the log if its not 0
-            string path = $"{Starbound.StorageDirectory}/{BASE_LOG}";
-            if (log != "0") path += $".{log}";
+            string line;
 
-            //Make sure it exists
-            if (!File.Exists(path))
-            {
-                args.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                args.Response.Close();
-                return;
-            }
-
-            //Do the actual searching with a string builder to generate some HTML
-            StringBuilder html = new StringBuilder();
-            //html.Append("<html>");
-            //html.Append("<head>");
-            //html.Append("<title>Log Search</title>");
-            //html.Append("<base href='../'>");
-            //html.Append("<link rel='stylesheet' type='text/css' href='css/main.css'>");
-            //html.Append("<link rel='stylesheet' type='text/css' href='css/log.css'>");
-            //html.Append("</head><body>");
-
-            int preMatchSize = 5;
-            int postMatchSize = 3;
+            int preMatchSize    = (int) Math.Ceiling(onion / 2.0);
+            int postMatchSize   = (int) Math.Floor(onion / 2.0); ;
             long lastMatchLine = -100;
             Queue<string> searchQueue = new Queue<string>(preMatchSize + 1);
             
             long lineCount = 0;
             long matchCount = 0;
 
-            using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 using (StreamReader reader = new StreamReader(stream))
-                {                   
+                {     
                     while (reader.Peek() > 0)
                     {
                         //Fetch the line
-                        string line = reader.ReadLine();
+                        line = reader.ReadLine();
                         lineCount++;
 
                         //Calc when the end is
@@ -162,7 +158,7 @@ namespace Starwatch.API.Web
                         if (match.Success)
                         {
                             //Add the match header
-                            if (lineCount > endOfMatchLine) html.Append($"<table border='1' id='Match{matchCount++}'>");
+                            if (lineCount > endOfMatchLine) html.Append($"<table id='{matchCount++}'>");
                             //html.Append("<tr><th>Line</th><th>Text</th></tr>");
 
                             //Add the previous 5 elements
@@ -206,8 +202,8 @@ namespace Starwatch.API.Web
                 }
             }
 
-            html.Append("</table>");
-            args.Response.WriteText(html.ToString(), ContentType.HTML);
+            html.Append("</table>").Append("</matches>");
+            return html.ToString();
         }
 
 

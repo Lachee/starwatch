@@ -6,7 +6,7 @@ using System;
 
 namespace Starwatch.API.Rest.Route
 {
-    [Route("/world/:identifier")]
+    [Route("/world/:identifier", AuthLevel.Admin)]
     class WorldDetailsRoute : RestRoute
     {
         [Argument("identifier", Converter = typeof(WorldConverter))]
@@ -26,19 +26,17 @@ namespace Starwatch.API.Rest.Route
         }
 
         /// <summary>
-        /// Moves the world file to another file.
-        /// </summary>
-        public override RestResponse OnPatch(Query query, object payloadObject)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        /// <summary>
-        /// Deletes the world file.
+        /// Deletes a world metadata if it can
         /// </summary>
         public override RestResponse OnDelete(Query query)
         {
-            throw new System.NotImplementedException();
+            if (World is CelestialWorld celestial)
+            {
+                var result = celestial.DeleteDetailsAsync(Starbound).Result;
+                return new RestResponse(RestStatus.OK, res: result);
+            }
+
+            return new RestResponse(RestStatus.BadRequest, msg: "The supplied world is not a celestial world and does not contain any metadata.");
         }
     }
 }

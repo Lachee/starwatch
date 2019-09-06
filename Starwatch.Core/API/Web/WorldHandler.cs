@@ -182,6 +182,10 @@ namespace Starwatch.API.Web
                 //World is loaded, its passed all our checks... I guess finally upload it
                 File.WriteAllBytes(world.GetAbsolutePath(API.Starwatch.Server), multipart.Content);
 
+                //Tell the world to delete its shit
+                if (world is CelestialWorld celestial)
+                    celestial.DeleteDetailsAsync(API.Starwatch.Server).Wait();
+
                 //Return the json, fully loaded
                 return HandleWorldJson(RequestMethod.Get, args, auth, world);
             }

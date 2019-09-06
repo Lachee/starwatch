@@ -3,7 +3,7 @@ using Starwatch.Entities;
 using Starwatch.API.Web;
 using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Rest.Route.Entities;
-using Starwatch.Extensions.Whitelist;
+using Starwatch.Modules.Whitelist;
 using System.Linq;
 
 namespace Starwatch.API.Rest.Route

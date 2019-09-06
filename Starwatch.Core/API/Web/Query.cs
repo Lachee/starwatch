@@ -11,6 +11,8 @@ namespace Starwatch.API.Web
     {
         public const string AsyncKey = "async";
 
+        public bool IsAsync => GetBool(AsyncKey, false);
+
         public Query() : base(0) { }
         public Query(int capacity) : base(capacity) { }
         public Query(Dictionary<string, string> collection) : base(collection) { }

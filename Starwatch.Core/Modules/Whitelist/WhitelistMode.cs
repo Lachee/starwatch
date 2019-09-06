@@ -1,4 +1,4 @@
-﻿namespace Starwatch.Extensions.Whitelist
+﻿namespace Starwatch.Modules.Whitelist
 {
     public enum WhitelistMode
     {
