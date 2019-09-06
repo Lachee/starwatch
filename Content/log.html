@@ -13,12 +13,23 @@
         <div id="search">
             <select id="log"></select>
             <input id="query" type="text" placeholder="regex"></input>
-            <button id="search">Search</button>
+            <button id="search">&#x1F50D;</button>
+            <button id="open">&#x1F4C4;</button>
         </div>
         <div id="searchhtml">
             
         </div>
     </body>
+    <script>
+    
+        function displaySearchedLogs(result)
+        {
+
+            $("#searchhtml").html(result); 
+        }
+
+    </script>
+
     <script>
         let swbase = location.protocol + "//" + location.hostname + ":" + (location.port ? location.port : 80);
         let apibase = swbase + "/api";
@@ -26,6 +37,7 @@
 
         $('input#query').keypress(function(e) { if(e.which == 13) {  Search($("select#log").children("option:selected").val(), $("input#query").val()); }});
         $("button#search").click(function () { Search($("select#log").children("option:selected").val(), $("input#query").val()); });
+        $("button#open").click(function () { Open($("select#log").children("option:selected").val()); });
 
         $.ajax({ url: apibase + "/log",}).done(function (data) {
             //Make sure its valid
@@ -39,6 +51,8 @@
             //Start processing the data
             let select_menu = $("select#log");
             select_menu.html("");
+
+            data.Response.sort();
             for (let i = 0; i < data.Response.length; i++) 
             {
                 var option = $("<option>", { value: data.Response[i] });
@@ -62,9 +76,7 @@
                 success: function(html) {
                     //Update the url
                     window.history.pushState({"html": html, "pageTitle": "Search Log " + log },"", "?log=" + log + "&regex=" + regex);
-
-                    //Update the window
-                    $("#searchhtml").html(html); 
+                    displaySearchedLogs(html);
                 },
                 error: function(http, textStatus, errorThrown)
                 {
@@ -91,12 +103,17 @@
             });
         }
         
+        function Open(log)
+        {
+            window.open("/log/" + log, "_self");
+        }
+
         $(document).ready(function() 
         {
             let regex = getParameterByName("regex");
             if (regex != null) 
             {             
-                //Update teh search query.
+                //Update the search query.
                 //We are updating the query and not hte selected log because that will get done
                 // when its generated.
                 $("input#query").val(regex);
@@ -109,7 +126,6 @@
                 Search(log, regex);
             }
             
-
             window.onpopstate = function(e){
                 if(e.state)
                 {

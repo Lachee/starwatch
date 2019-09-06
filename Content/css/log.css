@@ -29,3 +29,39 @@ td #highlight
     font-weight: bold;
     text-decoration: underline;
 }
+
+div#search {
+    /* padding: 1em; */
+    /* background: black; */
+    /* zoom: 2; */
+    height: 2em;
+    overflow: visible;
+}
+
+select, input, button {
+    border: none;
+    padding: 7px;
+    margin: 0;
+    left: 0;
+    float: left;
+    height: 2.4em;
+}
+button#open { background: #4c7daf; }
+
+input {
+    width: calc(100% - 3em - 6em - 3em);
+}
+
+button {
+    background: #4CAF50;
+    /* padding: 6px; */
+    /* border-radius: 3px; */
+    /* border: none; */
+    width: 3em;
+}
+
+select#log {
+    /* border-right: 1px solid #888888; */
+    background: #ffdd79;
+    width: 6em;
+}
