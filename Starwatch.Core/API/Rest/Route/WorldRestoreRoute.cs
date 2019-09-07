@@ -30,7 +30,7 @@ namespace Starwatch.API.Rest.Route
             if (restorer == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the restore manager!");
 
             //Get the backup
-            var restore = restorer.GetWorldRestoreAsync(World);
+            var restore = restorer.GetWorldRestoreAsync(World).Result;
             if (restore == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Restore does not exist.");
 
             //return the world

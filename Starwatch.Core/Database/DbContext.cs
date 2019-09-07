@@ -291,8 +291,9 @@ namespace Starwatch.Database
                 await cmd.ExecuteNonQueryAsync();
                 return cmd.LastInsertedId;
             }
-            catch(Exception)
+            catch(Exception e)
             {
+                Logger.LogError(e, "InsertUpdate Exception: {0}");
                 return 0;
             }
             finally

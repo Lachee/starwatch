@@ -33,10 +33,10 @@ namespace Starwatch.Modules.Restore
         public int Priority => Mirror != null ? 20 : 10;
 
         [JsonProperty("World")]
-        private string WorldWhereami { get => World.Whereami; set => World = World.ParseWhereami(value); }
+        private string WorldWhereami { get => World?.Whereami; set => World = World.ParseWhereami(value); }
 
         [JsonProperty("Mirror")]
-        public string MirrorWhereami { get => Mirror.Whereami; set => Mirror = value == null ? null : World.ParseWhereami(value); }
+        public string MirrorWhereami { get => Mirror?.Whereami; set => Mirror = value == null ? null : World.ParseWhereami(value); }
 
         /// <summary>
         /// Creates a new world restore monitor
