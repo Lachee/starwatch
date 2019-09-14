@@ -256,7 +256,8 @@ namespace Starwatch.Starbound
                 throw new ArgumentNullException("Cannot ban the player because it does not exist.");
 
             //Ban the user
-            long ticket = await Ban(new Ban(realP, reason, moderator), reload);
+            var ban = new Ban(realP, reason, moderator);
+            long ticket = await Ban(ban, reload);
 
             //Force to kick if requested
             if (kick)
@@ -268,7 +269,7 @@ namespace Starwatch.Starbound
                 else
                 {
                     Logger.Log("Kicking after ban");
-                    var res = await Kick(player, reason);
+                    var res = await Kick(player, ban.GetFormattedReason());
                     if (!res.Success)
                     {
                         Logger.LogError($"Error occured while trying to kick user: {res.Message}");

@@ -52,6 +52,15 @@ namespace Starwatch.Monitoring
                     var exception = msg.Content.Substring(coloni);
                     report = new DisagreementCrashReport() { Content = msg.ToString(), Exception = exception.Trim() };
 
+                    //Locate the player just for the sake of reporting
+                    if (int.TryParse(client, out var cid))
+                        report.Player = Server.Connections.GetPlayer(cid);
+
+                    //If we are an IO exception, throw.
+                    if (report.Exception.Contains("(IOException)"))
+                        throw new ServerShutdownException("World Thread Exception - IO Exception");
+
+                    /* Don't do any of this. We want to leave the palyer as is. They can go free.
                     //Parse the name
                     if (int.TryParse(client, out var cid))
                     {
@@ -92,6 +101,7 @@ namespace Starwatch.Monitoring
 
                     //We have no user crashing us, so we will throw a general exception to get the server to reboot
                     throw new ServerShutdownException("World Thread Exception - General Error");
+                    */
                 }
             }
             catch (Exception e)

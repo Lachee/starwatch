@@ -125,6 +125,32 @@ namespace Starwatch.Entities
             };
         }
 
+
+        /// <summary>
+        /// Formats the ban reason
+        /// </summary>
+        /// <returns></returns>
+        public string GetFormattedReason()
+        {
+            string reason = Reason;
+
+            //Make sure it has the ticket listed at least once.
+            if (!reason.Contains("{ticket}")) reason += "\n^orange;Ban Ticket: ^white;{ticket}";
+
+            //Replace the keys
+            reason = reason.Replace("{ticket}", Ticket.ToString());
+            reason = reason.Replace("{moderator}", Moderator);
+
+            //Replace the expiry date. If it has been set but we have got a date, add it
+            if (ExpiryDate.HasValue && (!reason.Contains("{expire}") || !reason.Contains("{expire_time}")))
+                reason += "\n^orange;Expires ^white;{expire}";
+
+            //Replace the dates
+            reason = reason.Replace("{expire}", ExpiryDate.HasValue ? ExpiryDate.Value.ToString("dd MMM y hh:mm tt") : "never");
+            reason = reason.Replace("{expire_time}", ExpiryDate.HasValue ? (ExpiryDate.Value - DateTime.UtcNow).Format() : "never");
+            return reason;
+        }
+
         public override string ToString()
         {
             return $"Ban ({Ticket.GetValueOrDefault(-1)}) [{BanType}] {IP ?? ""} {UUID ?? ""}";

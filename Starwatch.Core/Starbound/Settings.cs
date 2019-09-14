@@ -194,18 +194,8 @@ namespace Starwatch.Starbound
             //Make sure it has the ticket listed at least once.
             if (!ban.Reason.Contains("{ticket}")) ban.Reason += "\n^orange;Ban Ticket: ^white;{ticket}";
 
-            //Replace the keys
-            ban.Reason = ban.Reason.Replace("{ticket}", ban.Ticket.ToString());
-            ban.Reason = ban.Reason.Replace("{moderator}", ban.Moderator);
-
-            //Replace the expiry date. If it has been set but we have got a date, add it
-            if (ban.ExpiryDate.HasValue && (!ban.Reason.Contains("{expire}") || !ban.Reason.Contains("{expire_time}")))
-                ban.Reason += "\n^orange;Expires ^white;{expire}";
-
-            //Replace the dates
-            ban.Reason = ban.Reason.Replace("{expire}", ban.ExpiryDate.HasValue ? ban.ExpiryDate.Value.ToString("dd MMM y hh:mm tt") : "never");
-            ban.Reason = ban.Reason.Replace("{expire_time}", ban.ExpiryDate.HasValue ? (ban.ExpiryDate.Value - DateTime.UtcNow).Format() : "never");
-            
+            //Make sure it has the ticket listed at least once.
+            ban.Reason = ban.GetFormattedReason();
 
             //Add to the correct array
             var ipban = ban.GetIpBan();
