@@ -171,7 +171,7 @@
             $(".toolbar button#allowAnon").html("Working....");
 
             //TODO: Implement this
-            starwatch.patchSettings({ allowAnonymousConnections: state}, true, function(res) { updateSettings(); }); 
+            starwatch.patchSettings({ AllowAnonymousConnections: state}, true, function(res) { updateSettings(); }); 
         }
         function toggleAutoscroll() { setAutoscroll(!autoscroll); }
         function toggleFilter(tag) 

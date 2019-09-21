@@ -47,15 +47,11 @@ namespace Starwatch.API.Rest.Route
             if (payload.MaxPlayers.HasValue) Handler.Starbound.Configurator.MaxPlayers = payload.MaxPlayers.Value;
             if (payload.ServerName != null) Handler.Starbound.Configurator.ServerName = payload.ServerName;
 
-            //Save the settings and reload
-            if (reload)
-            { 
-                var task = Handler.Starbound.SaveConfigurationAsync(true);
-                if (async) return RestResponse.Async;
-                return new RestResponse(RestStatus.OK, res: task.Result ? GetCulledServerSettings(false, includeAll: includeAll) : null);
-            }
+           
 
-            return new RestResponse(RestStatus.OK, res: GetCulledServerSettings(true, includeAll: includeAll));
+            var task = Handler.Starbound.Configurator.SaveAsync(reload);
+            if (async) return RestResponse.Async;
+            return new RestResponse(RestStatus.OK, res:  GetCulledServerSettings(false, includeAll: includeAll));
         }
 
         public override RestResponse OnGet(Query query)
