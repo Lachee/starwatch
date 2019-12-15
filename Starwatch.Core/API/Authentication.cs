@@ -7,6 +7,9 @@ namespace Starwatch.API
 {
     public class Authentication
     {
+        const string SUPERBOT_NAME  = "bot_admin";
+        const string SUPERUSER_NAME = "admin";
+
         /// <summary>
         /// The NET Idenfifer of the authentication
         /// </summary>
@@ -130,14 +133,14 @@ namespace Starwatch.API
         {
             this.BotAccount = account;
             if (account.IsAdmin) AuthLevel = AuthLevel.SuperBot;
-            if (Name.Equals("bot_lachee")) AuthLevel = AuthLevel.SuperBot;
+            if (Name.Equals(SUPERBOT_NAME)) AuthLevel = AuthLevel.SuperBot;
         }
 
         public Authentication(Entities.Account account) : this(account.Name, account.Password, AuthLevel.User, AuthStyle.User)
         {
             this.StarboundAccount = account;
             if (account.IsAdmin) AuthLevel = AuthLevel.Admin;
-            if (Name.Equals("lachee")) AuthLevel = AuthLevel.SuperUser;
+            if (Name.Equals(SUPERUSER_NAME)) AuthLevel = AuthLevel.SuperUser;
         }
 
         /// <summary>
