@@ -35,5 +35,5 @@ It should do everything you need. It will generate a initial configuration that 
 
 
 ### API
-A mostly complete documentation for the REST and Gateway API can be found here on [Postman](https://app.getpostman.com/join-team?invite_code=8dab5c0d94993d5974ba81450540890b&ws=d6878c30-38cb-4800-9e49-01cc3fb7adb3).
+A mostly complete documentation for the REST and Gateway API can be found here on [Postman](https://documenter.getpostman.com/view/5336131/SWT8hzsk?version=latest).
 The world api is not documented yet.
