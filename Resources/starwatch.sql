@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Jul 08, 2019 at 10:43 AM
+-- Generation Time: Jan 27, 2020 at 12:53 PM
 -- Server version: 10.0.38-MariaDB-0ubuntu0.16.04.1
 -- PHP Version: 7.0.33-0ubuntu0.16.04.5
 
@@ -26,15 +26,13 @@ SET time_zone = "+00:00";
 -- Table structure for table `sb_accounts`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_accounts` (
+CREATE TABLE `sb_accounts` (
   `server` int(11) NOT NULL DEFAULT '1',
   `name` varchar(64) NOT NULL,
   `password` text NOT NULL,
   `is_admin` tinyint(1) NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `last_seen` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`name`),
-  KEY `server` (`server`)
+  `last_seen` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -43,18 +41,16 @@ CREATE TABLE IF NOT EXISTS `sb_accounts` (
 -- Table structure for table `sb_bans`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_bans` (
-  `ticket` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_bans` (
+  `ticket` bigint(20) NOT NULL,
   `server` int(11) NOT NULL,
   `uuid` varchar(64) DEFAULT NULL,
   `ip` varchar(64) DEFAULT NULL,
   `moderator` text,
   `reason` text,
   `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_expired` datetime DEFAULT NULL,
-  PRIMARY KEY (`ticket`),
-  KEY `server` (`server`)
-) ENGINE=InnoDB AUTO_INCREMENT=4307 DEFAULT CHARSET=utf8mb4;
+  `date_expired` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -62,16 +58,14 @@ CREATE TABLE IF NOT EXISTS `sb_bans` (
 -- Table structure for table `sb_chat`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_chat` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_chat` (
+  `id` bigint(20) NOT NULL,
   `session` bigint(20) NOT NULL,
   `content` text NOT NULL,
   `content_clean` text NOT NULL,
   `location` text,
-  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `session` (`session`)
-) ENGINE=InnoDB AUTO_INCREMENT=568 DEFAULT CHARSET=utf8mb4;
+  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -79,16 +73,14 @@ CREATE TABLE IF NOT EXISTS `sb_chat` (
 -- Table structure for table `sb_protections`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_protections` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` text NOT NULL,
-  `whereami` varchar(128) NOT NULL,
-  `mode` enum('BLACKLIST','WHITELIST') NOT NULL,
+CREATE TABLE `sb_protections` (
+  `id` bigint(20) NOT NULL,
+  `name` text,
+  `whereami` varchar(128) DEFAULT NULL,
+  `mode` enum('BLACKLIST','WHITELIST') NOT NULL DEFAULT 'BLACKLIST',
   `allow_anonymous` tinyint(1) NOT NULL DEFAULT '0',
-  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `whereami` (`whereami`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -96,16 +88,25 @@ CREATE TABLE IF NOT EXISTS `sb_protections` (
 -- Table structure for table `sb_protections_accounts`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_protections_accounts` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_protections_accounts` (
+  `id` bigint(20) NOT NULL,
   `protection` bigint(20) NOT NULL,
   `account` varchar(64) NOT NULL,
   `reason` text,
-  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `protection` (`protection`),
-  KEY `account` (`account`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+  `date_created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sb_restores`
+--
+
+CREATE TABLE `sb_restores` (
+  `world` varchar(128) NOT NULL,
+  `mirror` varchar(128) DEFAULT NULL,
+  `priority` int(11) NOT NULL DEFAULT '50'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -113,8 +114,8 @@ CREATE TABLE IF NOT EXISTS `sb_protections_accounts` (
 -- Table structure for table `sb_servers`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_servers` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_servers` (
+  `id` int(11) NOT NULL,
   `name` text NOT NULL,
   `allow_anonymous_connections` tinyint(1) NOT NULL,
   `allow_assets_mismatch` tinyint(1) NOT NULL,
@@ -127,9 +128,8 @@ CREATE TABLE IF NOT EXISTS `sb_servers` (
   `rcon_port` int(11) NOT NULL DEFAULT '21024',
   `rcon_password` text NOT NULL,
   `rcon_timeout` int(11) NOT NULL,
-  `json` text NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+  `json` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -137,21 +137,19 @@ CREATE TABLE IF NOT EXISTS `sb_servers` (
 -- Table structure for table `sb_sessions`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_sessions` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_sessions` (
+  `id` bigint(20) NOT NULL,
   `uptime` bigint(20) NOT NULL DEFAULT '0',
   `cid` int(11) NOT NULL,
-  `ip` varchar(64) NOT NULL,
+  `ip` varchar(64) DEFAULT NULL,
+  `vpn` tinyint(1) NOT NULL DEFAULT '0',
   `uuid` varchar(64) DEFAULT NULL,
   `username` text NOT NULL,
   `username_clean` text,
   `account` varchar(64) DEFAULT NULL,
   `date_joined` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_left` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `account` (`account`),
-  KEY `uptime` (`uptime`)
-) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4;
+  `date_left` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -159,14 +157,13 @@ CREATE TABLE IF NOT EXISTS `sb_sessions` (
 -- Table structure for table `sb_uptime`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_uptime` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `sb_uptime` (
+  `id` bigint(20) NOT NULL,
   `date_started` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `date_ended` datetime DEFAULT NULL,
   `reason` text,
-  `last_log` text NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4;
+  `last_log` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -174,7 +171,7 @@ CREATE TABLE IF NOT EXISTS `sb_uptime` (
 -- Table structure for table `sb_worlds`
 --
 
-CREATE TABLE IF NOT EXISTS `sb_worlds` (
+CREATE TABLE `sb_worlds` (
   `whereami` varchar(128) NOT NULL,
   `seed` bigint(20) NOT NULL,
   `x` bigint(20) NOT NULL,
@@ -186,11 +183,123 @@ CREATE TABLE IF NOT EXISTS `sb_worlds` (
   `size` text NOT NULL,
   `type` text NOT NULL,
   `biome` text NOT NULL,
+  `planet_graphics` text,
   `day_length` float NOT NULL,
   `threat_level` int(11) NOT NULL,
-  PRIMARY KEY (`whereami`)
+  `date_uploaded` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `sb_accounts`
+--
+ALTER TABLE `sb_accounts`
+  ADD PRIMARY KEY (`name`),
+  ADD KEY `server` (`server`);
+
+--
+-- Indexes for table `sb_bans`
+--
+ALTER TABLE `sb_bans`
+  ADD PRIMARY KEY (`ticket`),
+  ADD KEY `server` (`server`);
+
+--
+-- Indexes for table `sb_chat`
+--
+ALTER TABLE `sb_chat`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `session` (`session`);
+
+--
+-- Indexes for table `sb_protections`
+--
+ALTER TABLE `sb_protections`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `whereami` (`whereami`);
+
+--
+-- Indexes for table `sb_protections_accounts`
+--
+ALTER TABLE `sb_protections_accounts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `protection` (`protection`),
+  ADD KEY `account` (`account`);
+
+--
+-- Indexes for table `sb_restores`
+--
+ALTER TABLE `sb_restores`
+  ADD PRIMARY KEY (`world`);
+
+--
+-- Indexes for table `sb_servers`
+--
+ALTER TABLE `sb_servers`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `sb_sessions`
+--
+ALTER TABLE `sb_sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `account` (`account`),
+  ADD KEY `uptime` (`uptime`);
+
+--
+-- Indexes for table `sb_uptime`
+--
+ALTER TABLE `sb_uptime`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `sb_worlds`
+--
+ALTER TABLE `sb_worlds`
+  ADD PRIMARY KEY (`whereami`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `sb_bans`
+--
+ALTER TABLE `sb_bans`
+  MODIFY `ticket` bigint(20) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `sb_chat`
+--
+ALTER TABLE `sb_chat`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=126544;
+--
+-- AUTO_INCREMENT for table `sb_protections`
+--
+ALTER TABLE `sb_protections`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `sb_protections_accounts`
+--
+ALTER TABLE `sb_protections_accounts`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `sb_servers`
+--
+ALTER TABLE `sb_servers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+--
+-- AUTO_INCREMENT for table `sb_sessions`
+--
+ALTER TABLE `sb_sessions`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11384;
+--
+-- AUTO_INCREMENT for table `sb_uptime`
+--
+ALTER TABLE `sb_uptime`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=260;
 --
 -- Constraints for dumped tables
 --
