@@ -25,6 +25,10 @@ Just check out the **REST API** on [Postman](https://documenter.getpostman.com/v
 TL;DR 
 Without this, iLoveBacons would've been dead a long time ago
 
+###  Servers Running Starwatch
+_feel free to create PR to add your server_
+* [iLoveBacons](https://ilovebacons.com)
+
 ## Installation
 #### Requirements
 * Dotnet Core 2.0
