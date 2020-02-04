@@ -4,6 +4,8 @@ Starwatch is a Starbound Server manager with player management, crash recovery a
 It provides stability to the ilovebacons server, account management, access controll and a lot more! It works silently in the background and you may not know it, but is the reason why ilovebacons has had great continous uptimes.
 To prove its worth, it has gone through not 1, but 2 seperate server wipes by bacon and still has all its records and data!
 
+Just check out the **REST API** on [Postman](https://documenter.getpostman.com/view/5336131/SWT8hzsk?version=latest)! No seriously... I put a lot of effort in documenting it all and holy shit what ilovebacon actually uses is only like 25% of its capabilities.
+
 ## Features
 * Realtime Logs
 * Monitoring for Crashes and automatic Reboots
@@ -23,6 +25,10 @@ To prove its worth, it has gone through not 1, but 2 seperate server wipes by ba
 
 TL;DR 
 Without this, iLoveBacons would've been dead a long time ago
+
+###  Servers Running Starwatch
+_feel free to create PR to add your server_
+* [iLoveBacons](https://ilovebacons.com)
 
 ## Installation
 #### Requirements
