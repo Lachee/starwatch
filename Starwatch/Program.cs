@@ -81,19 +81,11 @@ namespace Starwatch
                         ConfigurationFile = args[++i];
                         break;
 
-        private Program()
-        {
-            tokenSource = new CancellationTokenSource();
-            readLines = true;
-        }
+                }
             }
 
-        private void RunStarwatch(string[] args)
-        {
-            Starwatch = new StarboundHandler(Configuration.FromFile("Starwatch.json"));
-            
-            var task = Task.Run(async () => { await Starwatch.Run(tokenSource.Token); }, tokenSource.Token);
-            while (readLines && !(task.IsCompleted || task.IsCanceled))
+            using (CancellationTokenSource cancellationSource = new CancellationTokenSource())
+            using (Starwatch = new StarboundHandler(Configuration.FromFile(ConfigurationFile)))
             {
                 //Import the previous starbound configuration.
                 if (!string.IsNullOrEmpty(configurationImportFile))
