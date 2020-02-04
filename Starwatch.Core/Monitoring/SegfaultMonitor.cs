@@ -29,7 +29,7 @@ namespace Starwatch.Monitoring
 	{
         const string FATAL_ERROR = "Fatal Error: ";
 
-        public SegfaultMonitor(Server server) : base(server, "Segfault") { }
+        public SegfaultMonitor(Server server) : base(server, "SegfaultMonitor") { }
 
         public override int Priority => 50;
 

@@ -114,8 +114,8 @@ namespace Starwatch.Starbound
         }
         public override void Dispose()
         {
-            _uuidTimer.Dispose();
-            _playerSemaphore.Dispose();
+            _uuidTimer?.Dispose();
+            _playerSemaphore?.Dispose();
         }
 
         #region Events

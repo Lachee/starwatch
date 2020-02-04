@@ -233,12 +233,31 @@ namespace Starwatch.Starbound
             //Save all the bans
             Logger.Log("- Importing Bans @ " + stopwatch.ElapsedMilliseconds);
             foreach (Ban b in settings.GetBansEnumerable())
-                await b.SaveAsync(DbContext);
+            {
+                try
+                {
+                    await b.SaveAsync(DbContext);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError("Failed ban {0}: {1}", b.IP + ":" + b.UUID, e.Message);
+                }
+            }
+
 
             //Save all the accounts
             Logger.Log("- Importing Accounts @ " + stopwatch.ElapsedMilliseconds);
             foreach (Account a in settings.ServerUsers.Accounts.Values)
-                await a.SaveAsync(DbContext);
+            {
+                try
+                {
+                    await a.SaveAsync(DbContext);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError("Failed account {0}: {1}", a.Name, e.Message);
+                }
+            }
 
             //Serialize into a jobj
             Logger.Log("- Importing Settings @ " + stopwatch.ElapsedMilliseconds);

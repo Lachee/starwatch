@@ -29,7 +29,7 @@ namespace Starwatch.Monitoring
     class UdpMonitor : Monitor
     {
         private Timer _checkTimer;
-        public UdpMonitor(Server server) : base(server, "Udp") { }
+        public UdpMonitor(Server server) : base(server, "UdpMonitor") { }
 
         public override Task Initialize()
         {

@@ -1,33 +1,14 @@
-/*
-START LICENSE DISCLAIMER
-Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
-Copyright(C) 2020 Lachee
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see < https://www.gnu.org/licenses/ >.
-END LICENSE DISCLAIMER
-*/
+﻿using Starwatch.Logging;
+using Starwatch.Util;
 using MySql.Data.MySqlClient;
-using Starwatch.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Starwatch.Util;
 using System.Threading;
-using System.IO;
+using System.Threading.Tasks;
 
 namespace Starwatch.Database
 {
@@ -310,11 +291,6 @@ namespace Starwatch.Database
                 await cmd.ExecuteNonQueryAsync();
                 return cmd.LastInsertedId;
             }
-            catch(Exception e)
-            {
-                Logger.LogError(e, "InsertUpdate Exception: {0}");
-                return 0;
-            }
             finally
             {
                 ReleaseCommand();
@@ -372,7 +348,7 @@ namespace Starwatch.Database
             await _semaphore.WaitAsync();
 
             //Logger.Log("[+] {0}", query.Substring(0, Math.Min(query.Length, 50)));
-
+            
             //Validate the command is empty
             if (_command != null)
                 throw new Exception("Attempted to create a new command, but the previous one hasn't been released.");
@@ -451,7 +427,6 @@ namespace Starwatch.Database
                     IsConnected = false;
 
                     //Create the connection
-                    Logger.Log("Creating new connection");
                     _connection = new MySqlConnection(this.Settings.ConnectionString);
                     _connection.StateChange += async (sender, args) =>
                     {
@@ -462,8 +437,6 @@ namespace Starwatch.Database
                 }
 
                 if (IsConnected) return true;
-
-                Logger.Log("Opening...");
                 await _connection.OpenAsync();
 
                 IsConnected = true;
@@ -471,7 +444,7 @@ namespace Starwatch.Database
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "SQL Open Exception: " + e.Message);
+                Logger.LogError(e, "SQL Open Exception. {0}");
                 await CloseAsync();
                 return false;
             }
@@ -491,7 +464,7 @@ namespace Starwatch.Database
             try
             {
                 //Close the connection asyncronously.
-                Logger.Log("Closing SQL");
+                //Logger.Log("Closing SQL");
                 await _connection.CloseAsync();
                 IsConnected = false;
             }
@@ -517,9 +490,9 @@ namespace Starwatch.Database
             {
                 //We are still apparently connected, force close it if we can.
                 // We don't care for errors because we will handle them later anyways.
-                //if (IsConnected)
-                //    try { _connection.Close(); } catch (Exception) { }
-
+                if (IsConnected)
+                    try { _connection.Close(); } catch (Exception) { }
+                
                 //Dispose of the connection and set it to null.
                 _connection?.Dispose();
                 _connection = null;
@@ -527,9 +500,7 @@ namespace Starwatch.Database
 
             //Set our flag
             IsConnected = false;
-            Logger.Log("Done");
         }
-
 
         /// <summary>
         /// Disposes the connection
@@ -547,8 +518,6 @@ namespace Starwatch.Database
             if (!File.Exists(filepath))
                 throw new FileNotFoundException("The file was not found", filepath);
 
-#if ALLOW_IMPORT
-
             //Generate the big long statement
             string[] lines = File.ReadAllLines(filepath);
             StringBuilder builder = new StringBuilder();
@@ -556,13 +525,13 @@ namespace Starwatch.Database
             {
                 if (line.StartsWith("--") || line.StartsWith("/*") || line.EndsWith("*/"))
                     continue;
-
-                builder.Append(!replacePrefix ? line : line.Replace("sb_", this.Settings.Prefix));
+                
+                builder.Append(!replacePrefix ? line : line.Replace("k_", this.Settings.Prefix));
             }
 
             //Prepare the queries
             string[] queries = builder.ToString().Split(';');
-            foreach (var q in queries)
+            foreach(var q in queries)
             {
                 if (string.IsNullOrWhiteSpace(q)) continue;
 
@@ -571,7 +540,7 @@ namespace Starwatch.Database
                     var cmd = await CreateCommand(q);
                     await cmd.ExecuteScalarAsync();
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     Logger.LogError(e, "Import Failure!");
                     break;
@@ -581,9 +550,6 @@ namespace Starwatch.Database
                     ReleaseCommand();
                 }
             }
-#else
-            await Task.CompletedTask;
-#endif
         }
 
     }

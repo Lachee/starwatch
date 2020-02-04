@@ -28,7 +28,21 @@ namespace Starwatch.Monitoring
     {
         public const string EXCEPTION_MAP_KEY = "UniverseServer: exception caught: (MapException)";
 
-        public string BanFormat => Configuration.GetString("ban_format", 
+        public string BanFormat { get; private set; }
+
+        private int _errorTally = 0;
+        private int _errorConnection = 0;
+        private string _errorKey = "";
+        public override int Priority => 59;
+
+        public RaceMonitor(Server server) : base(server, "RaceMonitor")
+        {
+        }
+
+        public override Task Initialize()
+        {
+            //Setup the ban formatting.
+            BanFormat = Configuration.GetString("ban_format",
 @"^orange;You have been banned ^white;automatically ^orange;for using custom races.
 We detected the race ^white;'{key}'
 ^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
@@ -36,18 +50,7 @@ We detected the race ^white;'{key}'
 ^blue;Please make an appeal at
 ^pink;https://iLoveBacons.com/request/");
 
-        private int _errorTally = 0;
-        private int _errorConnection = 0;
-        private string _errorKey = "";
-        public override int Priority => 59;
 
-        public RaceMonitor(Server server) : base(server, "RACE")
-        {
-        }
-
-        public override Task Initialize()
-        {
-            Logger.Log("Ban Message: " + BanFormat);
             return Task.CompletedTask;
         }
 

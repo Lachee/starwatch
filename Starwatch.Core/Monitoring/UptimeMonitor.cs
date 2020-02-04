@@ -36,7 +36,7 @@ namespace Starwatch.Monitoring
         public override int Priority => 11;
 
         private DropoutStack<string> _stack;
-        public UptimeMonitor(Server server) : base(server, "Uptime")
+        public UptimeMonitor(Server server) : base(server, "UptimeMonitor")
         {
             _stack = new DropoutStack<string>(10);
         }

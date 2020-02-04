@@ -157,8 +157,15 @@ namespace Starwatch.Starbound
             _monitors = new List<Monitor>();
             foreach(var m in monitors.OrderBy(m => m.Priority))
             {
-                _monitors.Add(m);
-                await m.Initialize();
+                try
+                {
+                    _monitors.Add(m);
+                    await m.Initialize();
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "Failed to load Monitor " + m.Name + ": {0}");
+                }
             }
             
 
@@ -378,7 +385,7 @@ namespace Starwatch.Starbound
             //Make sure the configuration is valid
             if (!await Configurator.TryLoadAsync())
             {
-                Logger.LogError("Cannot start server as the configuration is invalid, but '{0}' does not exist", ConfigurationFile);
+                Logger.LogError("Cannot start server as the configuration is invalid, make sure you -import before use. see documentation for reference.", ConfigurationFile);
                 return;
             }
 
@@ -671,8 +678,11 @@ namespace Starwatch.Starbound
 
         public void Dispose()
         {
+            //Dispose all the monitors
             foreach (var m in _monitors) m.Dispose();
             _monitors.Clear();
+
+            //Force the server to close.
             if (_starbound != null)
             {
                 _starbound.Dispose();

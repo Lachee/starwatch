@@ -31,36 +31,43 @@ namespace Starwatch.Monitoring
 
         public override int Priority => 10;
 
-        public LogMonitor(Server server) : base(server, "Game")
+        public LogMonitor(Server server) : base(server, "LogMonitor")
         {
-            Logger.Colourise = true;
-            string logLevel = Configuration.GetObject("level", "CIWE");
-            Configuration.Save();
+            Logger.Colourise = true;      
+        }
 
+        public override Task Initialize()
+        {
+            //Prepare what configuration we should grab
+            string logLevel = Configuration.GetObject("level", "CIWE");
             _logChat = logLevel.Contains("C");
             _logInfo = logLevel.Contains("I");
             _logWarning = logLevel.Contains("W");
             _logError = logLevel.Contains("E");
 
-            server.Connections.OnPlayerConnect += (player) =>
+            //Register event listeners
+            Server.Connections.OnPlayerConnect += (player) =>
             {
                 Logger.Log("A player has connected!");
             };
 
-            server.Connections.OnPlayerUpdate += (player) =>
+            Server.Connections.OnPlayerUpdate += (player) =>
             {
                 Logger.Log("A player has updated!");
                 Logger.Log("UUID: " + player.UUID);
                 Logger.Log("Location: " + player.Location);
             };
 
-            server.Connections.OnPlayerDisconnect += (player, reason) =>
+            Server.Connections.OnPlayerDisconnect += (player, reason) =>
             {
                 Logger.Log("A player has disconnected because " + reason);
             };
+
+            //Return the completed task
+            return Task.CompletedTask;
         }
 
-		public override async Task<bool> HandleMessage(Message msg)
+        public override async Task<bool> HandleMessage(Message msg)
         {
             //return Task.FromResult(false);
             switch (msg.Level)

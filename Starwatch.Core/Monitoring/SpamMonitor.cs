@@ -33,20 +33,42 @@ namespace Starwatch.Monitoring
 
         public override int Priority => 11;
 
+        /// <summary>
+        /// The weight at which the spam will trigger
+        /// </summary>
+        public int TriggerThreshold { get; private set; }
 
-        public int TriggerThreshold { get; }
-        public int Weight { get; } = 3;
+        /// <summary>
+        /// How heavy repeated messages are.
+        /// </summary>
+        public int Weight { get; private set; } = 3;
 
-        private Dictionary<string, int> _tallies;
+        /// <summary>
+        /// List of tallies
+        /// </summary>
+        private Dictionary<string, int> _tallies = new Dictionary<string, int>();
 
+        /// <summary>
+        /// Disable Anonymous Connections on spam detection
+        /// </summary>
+        public bool DisableAnonymousConnections { get; private set; }
 
-        public SpamMonitor(Server server) : base(server, "Spam")
+        /// <summary>
+        /// Restart the server on spam detection.
+        /// </summary>
+        public bool RestartServer { get; private set; }
+
+        public SpamMonitor(Server server) : base(server, "SpamMonitor") { }
+
+        public override Task Initialize()
         {
-            TriggerThreshold = Configuration.GetInt("theshold", 10) * Weight;
-            _tallies = new Dictionary<string, int>();
+            TriggerThreshold            = Configuration.GetInt("theshold", 10) * Weight;
+            DisableAnonymousConnections = Configuration.GetBool("disable_anonymous", true);
+            RestartServer               = Configuration.GetBool("restart_server", true);
+            return Task.CompletedTask;
         }
 
-		public override async Task<bool> HandleMessage(Message msg)
+        public override async Task<bool> HandleMessage(Message msg)
         {
             //Clean tallies then try to increment.
             CleanTallies();
@@ -55,11 +77,24 @@ namespace Starwatch.Monitoring
             {
                 //Disable anonymous
                 Logger.Log("Premptive Attack Detected!");
-                Server.Configurator.AllowAnonymousConnections = false;
-                await Server.Configurator.SaveAsync(false);
+                if (DisableAnonymousConnections)
+                {
+                    Server.Configurator.AllowAnonymousConnections = false;
+                    await Server.Configurator.SaveAsync(false);
+                }
+
+                //Report the crash to the gateway
+                Server.ApiHandler.BroadcastRoute((gateway) =>
+                {
+                    if (gateway.Authentication.AuthLevel < API.AuthLevel.Admin) return null;
+                    return msg;
+                }, "OnSpam");
 
                 //Restart
-                throw new ServerShutdownException("Premptive Attack Mitigation: " + msg.Content);
+                if (RestartServer)
+                {
+                    throw new ServerShutdownException("Premptive Attack Mitigation: " + msg.Content);
+                }
             }
 
             return false;

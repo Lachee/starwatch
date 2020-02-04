@@ -39,12 +39,7 @@ namespace Starwatch.Monitoring
         /// <summary>
         /// The message to ban with
         /// </summary>
-        public string BanReason => Configuration.GetString("ban_format",
-@"^orange;You have been banned ^white;automatically ^orange;for generate invalid coordinates.
-^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
-
-^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/request/");
+        public string BanReason { get; private set; }
 
         /// <summary>
         /// The detection we have found so far
@@ -56,12 +51,25 @@ namespace Starwatch.Monitoring
             public string Coordinate { get; internal set; }
         }
 
-        public InvalidCoordMonitor(Server server) : base(server, "InvalidCoord")
+        public InvalidCoordMonitor(Server server) : base(server, "InvalidCoordMonitor")
         {
             Detection = new InvalidCoordinateDetection();
         }
-        
-		public override async Task<bool> HandleMessage(Message msg)
+
+        public override Task Initialize()
+        {
+            //Load the initial ban reason.
+            BanReason = Configuration.GetString("ban_format",
+@"^orange;You have been banned ^white;automatically ^orange;for generate invalid coordinates.
+^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
+
+^blue;Please make an appeal at
+^pink;https://iLoveBacons.com/request/");
+
+            return Task.CompletedTask;
+        }
+
+        public override async Task<bool> HandleMessage(Message msg)
 		{
             //Check if its a flying message
             if (msg.Level == Message.LogLevel.Info)

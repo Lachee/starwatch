@@ -28,9 +28,10 @@ using System.Threading.Tasks;
 
 namespace Starwatch
 {
-    public class StarboundHandler
+    public class StarboundHandler : IDisposable
     {
         public volatile bool KeepAlive = true;
+
         public Logger Logger { get; private set; }
         public Server Server { get; private set; }
         public Configuration Configuration { get; private set; }
@@ -49,14 +50,32 @@ namespace Starwatch
                 OutputLogQueue.Initialize(outputFilename, Configuration.GetBool("output_append", false));
             }
 
-            //Initialize the region export directory
-            PythonScriptsDirectory = Configuration.GetString("python_parsers", "Resources/py");
-            
             //Initialize the default logger
             this.Logger = new Logger("SWC");
+            Logger.Log("Logger Initialized");
+
+            //Setup the database
+            var settings = Configuration.GetObject<ConnectionSettings>("SQL", new ConnectionSettings()
+            {
+                Host = "localhost",
+                Database = "starwatch",
+                Username = "root",
+                Password = "rootpass",
+                Prefix = "sb_",
+            });
+            DbContext = new DbContext(settings, Logger.Child("SQL"));
+
+            //Make sure we actually encrypt
+            if (string.IsNullOrEmpty(settings.Passphrase))
+                throw new Exception("SQL Passphrase cannot be empty. This is used to encrypt sensitive player data!");
+
+            //Initialize the region export directory
+            PythonScriptsDirectory = Configuration.GetString("python_parsers", "Resources/py");
+
+            //Save the configuration with the defaults
+            Configuration.Save();
 
             //Setup the unhandled exception handler
-
             AppDomain currentDomain = AppDomain.CurrentDomain;
             currentDomain.UnhandledException += new UnhandledExceptionEventHandler(UnhandledExceptionHandler);
         }
@@ -68,61 +87,70 @@ namespace Starwatch
             Logger.LogError(e.ExceptionObject as Exception, "Exception: {0}");
         }
 
+        /// <summary>
+        /// Initializes the servers
+        /// </summary>
+        /// <returns></returns>
+        public async Task Initialize()
+        {
+            //Initialize the API first
+            if (ApiHandler == null)
+            {
+                Logger.Log("Initializing API...");
+                ApiHandler = new API.ApiHandler(this, Configuration.GetConfiguration("api"));
+                await ApiHandler.Start();
+            }
+
+            //Load the server if its null
+            if (Server == null)
+            {
+                //Initialize the server
+                Server = new Server(this, Configuration.GetConfiguration("server"));
+                await Server.LoadAssemblyMonitorsAsync(System.Reflection.Assembly.GetAssembly(typeof(Server)));
+                
+                //Save our configuration
+                Configuration.Save();
+            }
+        }
+
+        /// <summary>
+        /// Deinitializes the server and API
+        /// </summary>
+        /// <returns></returns>
+        public async Task Deinitialize()
+        {
+            //Terminate the server
+            if (Server != null)
+            {
+                Logger.Log("Terminating and closing server...");
+                if (Server.IsRunning) await Server.Terminate();
+            }
+
+            //Terminate the API
+            if (ApiHandler != null)
+            {
+                Logger.Log("Terminating the API handler...");
+                await ApiHandler.Stop();
+            }
+        }
+
+        /// <summary>
+        /// Runs all the servers after initializing
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task Run(CancellationToken cancellationToken)
         {
             try
             {
-                if (DbContext == null)
-                {
-                    Logger.Log("Initializing Database...");
-                    var settings = Configuration.GetObject<ConnectionSettings>("SQL", new ConnectionSettings()
-                    {
-                        Host = "localhost",
-                        Database = "starwatch",
-                        Username = "root",
-                        Password = "rootpass",
-                        Prefix = "sb_",
-                        DefaultImport = "Resources/starwatch.sql"
-                    });
-                    DbContext = new DbContext(settings, Logger.Child("SQL"));
-
-                    if (!string.IsNullOrWhiteSpace(settings.DefaultImport))
-                        await DbContext.ImportSqlAsync(settings.DefaultImport);
-                }
-                
-                //Initialize the API first
-                if (ApiHandler == null)
-                {
-                    Logger.Log("Initializing API...");
-                    ApiHandler = new API.ApiHandler(this, Configuration.GetConfiguration("api"));
-                    await ApiHandler.Start();
-                }
-
-                //Update the list of available monitors
-                Configuration.SetKey("available_monitors", BuildMonitorList(System.Reflection.Assembly.GetAssembly(typeof(Monitoring.Monitor))));
-                Configuration.Save();
+                Logger.Log("Running Starwatch");
 
                 //Initialize some intial settings and then run the server
                 KeepAlive = true;
                 while (KeepAlive && !cancellationToken.IsCancellationRequested)
                 {
-                    //Load the server if its null
-                    if (Server == null)
-                    {
-                        string[] monitors = Configuration.GetObject<string[]>("available_monitors", null);
-                        if (monitors == null)
-                        {
-                            Logger.LogError("Monitors are not setup. Creating inital array then aborting!");
-                            KeepAlive = false;
-                        }
-
-                        //Initialize the server
-                        Server = await InitializeServer(Configuration.GetConfiguration("server"));
-
-                        //Save our configuration
-                        Configuration.Save();
-                    }
-
+                    //Rerun the initialize
+                    await Initialize();
 
                     //Run the server
                     if (KeepAlive && !cancellationToken.IsCancellationRequested)
@@ -132,19 +160,8 @@ namespace Starwatch
                     }
                 }
 
-                //Terminate the server
-                if (Server != null)
-                {
-                    Logger.Log("Terminating and closing server...");
-                    //await Server.Terminate("Cancellation Token was aborted");
-                }
-
-                //Terminate the API
-                if (ApiHandler != null)
-                {
-                    Logger.Log("Terminating the API handler...");
-                    await ApiHandler.Stop();
-                }
+                //Deinitialize
+                await Deinitialize();
 
                 //Save our configuration
                 Configuration.Save();
@@ -155,38 +172,36 @@ namespace Starwatch
             }
             finally
             {
-                //Close the database
-                if (DbContext != null)
-                {
-                    DbContext.Dispose();
-                    DbContext = null;
-                }
-
-                //Finally close the server
-                if (Server != null)
-                {
-                    Logger.Log("Disposing the server...");
-                    Server.Dispose();
-                    Server = null;
-                    Logger.Log("Finished disposing the server.");
-                }
+                //Call our own dispose to make sure nothing is left running
+                Dispose();
             }
         }
 
-        private async Task<Server> InitializeServer(Configuration configuration)
+        public void Dispose()
         {
-            //Prepare the server object
-            var server = new Server(this, configuration);
-            await server.LoadAssemblyMonitorsAsync(System.Reflection.Assembly.GetAssembly(typeof(Server)));
+            //Disable the keep alive
+            KeepAlive = false;
 
-            //Return the server
-            return server;
-        }
+            //Dispose the API
+            if (ApiHandler != null)
+            {
+                ApiHandler.Stop().Wait();
+                ApiHandler = null;
+            }
 
-        private string[] BuildMonitorList(System.Reflection.Assembly assembly) 
-        {
-           return assembly.GetTypes().Where(t => !t.IsAbstract && typeof(Monitoring.Monitor).IsAssignableFrom(t) && t != typeof(Connections)).Select(t => t.FullName).ToArray();
+            //Dispose the server
+            if (Server != null)
+            {
+                Server.Dispose();
+                Server = null;
+            }
+
+            //Dispose the DB
+            if (DbContext != null)
+            {
+                DbContext.Dispose();
+                DbContext = null;
+            }
         }
-        
     }
 }

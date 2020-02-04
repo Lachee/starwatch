@@ -30,21 +30,24 @@ namespace Starwatch.Modules.Restore
 {
     public class RestoreMonitor : ConfigurableMonitor
     {
-        public const bool DELETE_METADATA_RESTORE           = false;
-        public const bool DELETE_METADATA_RESTORE_MIRROR    = false;
-        public const bool DELETE_METADATA_MIRROR            = false;
-        public const bool DELETE_METADATA_SNAPSHOT          = false;
+        public const bool DELETE_METADATA_RESTORE = false;
+        public const bool DELETE_METADATA_RESTORE_MIRROR = false;
+        public const bool DELETE_METADATA_MIRROR = false;
+        public const bool DELETE_METADATA_SNAPSHOT = false;
 
         public override int Priority => 10;
-        public string RestoreDirectory
-        {
-            get => Configuration.GetString("restores", "restores/");
-            set => Configuration.SetKey("restores", value);
-        }
+        public string RestoreDirectory { get; private set; }
 
         public RestoreMonitor(Server server) : base(server, "Restore Monitor")
         {
         }
+
+        public override Task Initialize()
+        {
+            RestoreDirectory = Configuration.GetString("restores", "restores/");
+            return Task.CompletedTask;
+        }
+
 
         public override async Task OnServerPreStart()
         {

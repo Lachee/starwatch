@@ -38,6 +38,9 @@ namespace Starwatch.Util
 
         public static string Encrypt(this string plainText, string passPhrase)
         {
+            if (string.IsNullOrWhiteSpace(passPhrase))
+                throw new ArgumentException("Passphrase cannot be empty", "passPhrase");
+
             // Salt and IV is randomly generated each time, but is preprended to encrypted cipher text
             // so that the same Salt and IV values can be used when decrypting.  
             var saltStringBytes = Generate128BitsOfRandomEntropy();
@@ -75,6 +78,9 @@ namespace Starwatch.Util
 
         public static string Decrypt(this string cipherText, string passPhrase)
         {
+            if (string.IsNullOrWhiteSpace(passPhrase))
+                throw new ArgumentException("Passphrase cannot be empty", "passPhrase");
+
             // Get the complete stream of bytes that represent:
             // [32 bytes of Salt] + [16 bytes of IV] + [n bytes of CipherText]
             var cipherTextBytesWithSaltAndIv = Convert.FromBase64String(cipherText);

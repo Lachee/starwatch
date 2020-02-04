@@ -28,22 +28,27 @@ namespace Starwatch.Monitoring
 {
     class VpnMonitor : ConfigurableMonitor
     {
-        public string NoAddressReason = "Malformed connection.";
-        public string AnonymousVpnReason = "Invalid connection.";
-        public string IPv6Reason = "IPv6 is not supported on this platform.";
+        public string NoAddressReason { get; private set; } = "Malformed connection.";
+        public string AnonymousVpnReason { get; private set; } = "Invalid connection.";
+        public string IPv6Reason { get; private set; } = "IPv6 is not supported on this platform.";
 
         public bool AllowVPN { get; set; }
         public bool AllowAnonymousVPN { get; set; }
 
-        public VpnMonitor(Server server) : base(server, "VPN")
+        public VpnMonitor(Server server) : base(server, "VPNMonitor")
         {
             server.Connections.OnPlayerConnect += OnPlayerConnected;
+        }
+
+        public override Task Initialize()
+        {
             NoAddressReason     = Configuration.GetString("reason_noaddress", NoAddressReason);
             AnonymousVpnReason  = Configuration.GetString("reason_anonvpn", AnonymousVpnReason);
             IPv6Reason          = Configuration.GetString("reason_ipv6", IPv6Reason);
             AllowVPN            = Configuration.GetBool("allow_vpn", true);
             AllowAnonymousVPN   = Configuration.GetBool("allow_anonvpn", false);
-            Configuration.Save();
+
+            return Task.CompletedTask;
         }
 
         private async void OnPlayerConnected(Player player)

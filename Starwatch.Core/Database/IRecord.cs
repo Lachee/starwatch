@@ -1,24 +1,4 @@
-/*
-START LICENSE DISCLAIMER
-Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
-Copyright(C) 2020 Lachee
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see < https://www.gnu.org/licenses/ >.
-END LICENSE DISCLAIMER
-*/
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,24 +7,7 @@ namespace Starwatch.Database
 {
     public interface IRecord
     {
-        /// <summary>
-        /// Name of the database table
-        /// </summary>
-        [JsonIgnore]
-        string Table { get; }
-
-        /// <summary>
-        /// Loads data from the database in to the object. Returns true if the load was successful.
-        /// </summary>
-        /// <param name="db"></param>
-        /// <returns></returns>
         Task<bool> LoadAsync(DbContext db);
-
-        /// <summary>
-        /// Saves data from the object into the database. Returns true if the record was inserted.
-        /// </summary>
-        /// <param name="db"></param>
-        /// <returns></returns>
         Task<bool> SaveAsync(DbContext db);
     }
 }

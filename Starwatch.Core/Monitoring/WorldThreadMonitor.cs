@@ -29,34 +29,28 @@ namespace Starwatch.Monitoring
     class WorldThreadMonitor : ConfigurableMonitor
     {
         public const string ERROR_MESSAGE = "WorldServerThread exception caught handling incoming packets for client";
-        public string BanFormat => 
-@"^orange;You have been banned ^white;automatically ^orange;for causing a world exception.
-^red;{exception}
+        public string BanFormat { get;  private set; }
 
-^orange;Your ^pink;ticket ^orange; is ^white;{ticket}
 
-^blue;Please make an appeal at
-^pink;https://iLoveBacons.com/request/";
-
-        public string KickFormat =>
-@"^orange;You have been kicked for causing a world exception.
-^red;{exception}";
+        public string KickFormat { get; private set; }
 
         public override int Priority => 50;
 
-        public WorldThreadMonitor(Server server) : base(server, "WORLD")
+        public WorldThreadMonitor(Server server) : base(server, "WorldMonitor")
         {
         }
 
         public override Task Initialize()
         {
             Logger.Log("Disagrement Ban Message: " + BanFormat);
+            KickFormat = Configuration.GetString("kick_reason", "^orange;You have been kicked for causing a world exception.\n^red;{exception}");
+            BanFormat = Configuration.GetString("ban_reason", "^orange;You have been banned ^white;automatically ^orange;for causing a world exception.\n^red;{exception}\n\n^orange;Your ^pink;ticket ^orange; is ^white;{ticket}");
             return Task.CompletedTask;
         }
 
-        public override async Task<bool> HandleMessage(Message msg)
+        public override Task<bool> HandleMessage(Message msg)
         {
-            if (msg.Level != Message.LogLevel.Error) return false;
+            if (msg.Level != Message.LogLevel.Error) return Task.FromResult(false);
 
             //Prepare the report
             DisagreementCrashReport report = null;
@@ -128,7 +122,7 @@ namespace Starwatch.Monitoring
                 //Our logic threw an exception, most likely a ServerShutdownException. Lets abort and restart the server.
                 Logger.LogError(e);
                 Server.LastShutdownReason = $"Disagreement Shutdown ({e.GetType().Name}): {e.Message}\n" + e.StackTrace;
-                return true;
+                return Task.FromResult(true);
             }
             finally
             {
@@ -138,7 +132,7 @@ namespace Starwatch.Monitoring
             }
 
             //We don't want to restart.
-            return false;
+            return Task.FromResult(false);
         }
 
         private void BroadcastReport(DisagreementCrashReport report)
