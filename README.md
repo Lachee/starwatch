@@ -98,3 +98,6 @@ This will run starwatch and start the server (if all configured correctly).
 ## API
 A mostly complete documentation for the REST and Gateway API can be found here on [Postman](https://documenter.getpostman.com/view/5336131/SWT8hzsk?version=latest).
 The world api is not documented yet.
+
+## Discord Bot
+This does not have an offically associated bot. However, you can use [KoalaBot](https://github.com/Lachee/koala-bot) as an example / rough prototype for your own bot as it has a rough draft of a C# implemtation of the Starwatch API.
