@@ -100,4 +100,4 @@ A mostly complete documentation for the REST and Gateway API can be found here o
 The world api is not documented yet.
 
 ## Discord Bot
-This does not have an offically associated bot. However, you can use [KoalaBot](https://github.com/Lachee/koala-bot) as an example / rough prototype for your own bot as it has a rough draft of a C# implemtation of the Starwatch API.
+This does not have an offically associated bot. However, you can use [KoalaBot](https://github.com/Lachee/koala-bot) as an example / rough prototype for your own bot as it has a rough draft of a [C# implemtation of the Starwatch API](https://github.com/Lachee/koala-bot/blob/master/KoalaBot/Starwatch/StarwatchClient.cs#L16).
