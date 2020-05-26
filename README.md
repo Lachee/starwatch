@@ -34,7 +34,7 @@ _feel free to create PR to add your server_
 #### Requirements
 * Dotnet Core 2.0
 * MySQL or something similar
-* Python (for metadata)
+* Python (used for advance world metadata)
 
 1. Import SQL into the server: `Resources/starwatch.sql`
 How you import is up to you. I personally prefer to drag'n'drop into phpMyAdmin, but you can easily do it via the command line too.
