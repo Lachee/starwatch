@@ -1,10 +1,18 @@
 
-# starwatch
+# Starwatch
 Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
 It provides stability to the ilovebacons server, account management, access control and a lot more! It works silently in the background and you may not know it, but is the reason why ilovebacons has had great continous uptimes.
 To prove its worth, it has gone through not 1, but 2 seperate server wipes by bacon and still has all its records and data!
 
+![Starwatch Example](https://i.lu.je/2020/chrome_EmXfmFXXk5.png)
+
+## REST API
+### Make your own Bots / Web Applications / Forum Links
 Just check out the **REST API** on [Postman](https://documenter.getpostman.com/view/5336131/SWT8hzsk?version=latest)! No seriously... I put a lot of effort in documenting it all and holy shit what ilovebacon actually uses is only like 25% of its capabilities.
+
+[Visit REST Documentation](https://documenter.getpostman.com/view/5336131/SWT8hzsk?version=latest)
+
+In addition to the REST, there is also undocumented **Gateway** (live events), **World Upload/Download**, **oAuth2 Provider** (login with starbound account, experimental).
 
 ## Features
 * Realtime Logs
