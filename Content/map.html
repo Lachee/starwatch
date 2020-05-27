@@ -60,6 +60,8 @@
 //https://leafletjs.com/examples/crs-simple/crs-simple.html
 //https://github.com/Leaflet/Leaflet.markercluster#options
 
+	alert('This is an experimental feature, it may not work as you expect it too. Be warned.');
+
 
 	function s(v) {  return !logScaling ? v : (v < 0 ? -Math.log10(Math.abs(v)) : Math.log10(v)); }
 	var randomPointOnCircle = function(point, r)
@@ -159,7 +161,7 @@
 	function getWorlds()
 	{
 		const Http = new XMLHttpRequest();
-		const url='https://sb.ilovebacons.com:4242/api/world/search?systems';
+		const url='/api/world/search?systems';
 		Http.open("GET", url);
 		Http.send();
 
@@ -258,7 +260,7 @@
 	function locatePlayer(connection)
 	{
 		const Http = new XMLHttpRequest();
-		const url='https://sb.ilovebacons.com:4242/api/player/' + connection + '?enforce=true';
+		const url='/api/player/' + connection + '?enforce=true';
 		Http.open("GET", url);
 		Http.send();
 
@@ -275,7 +277,7 @@
 	function flyToCelestial(celestial)
 	{
 		const Http = new XMLHttpRequest();
-		const url='https://sb.ilovebacons.com:4242/api/world/' + celestial;
+		const url='/api/world/' + celestial;
 		Http.open("GET", url);
 		Http.send();
 
