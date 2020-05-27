@@ -1,10 +1,8 @@
-<img align="left" src="https://github.com/Lachee/starwatch/raw/master/Content/starwatch.png" width=256>
+<img align="left" src="https://github.com/Lachee/starwatch/raw/master/Content/starwatch.png" width=128>
 
 Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
 It provides stability to the ilovebacons server, account management, access control and a lot more! It works silently in the background and you may not know it, but is the reason why ilovebacons has had great continous uptimes.
 To prove its worth, it has gone through not 1, but 2 seperate server wipes by bacon and still has all its records and data!
-
-![Starwatch Example](https://i.lu.je/2020/chrome_EmXfmFXXk5.png)
 
 ## REST API
 ### Make your own Bots / Web Applications / Forum Links
@@ -34,9 +32,8 @@ In addition to the REST, there is also undocumented **Gateway** (live events), *
 TL;DR 
 Without this, iLoveBacons would've been dead a long time ago
 
-###  Servers Running Starwatch
-_feel free to create PR to add your server_
-* [iLoveBacons](https://ilovebacons.com)
+
+![Starwatch Example](https://i.lu.je/2020/chrome_EmXfmFXXk5.png)
 
 ## Installation
 #### Requirements
@@ -109,3 +106,8 @@ The world api is not documented yet.
 
 ## Discord Bot
 This does not have an offically associated bot. However, you can use [KoalaBot](https://github.com/Lachee/koala-bot) as an example / rough prototype for your own bot as it has a rough draft of a [C# implemtation of the Starwatch API](https://github.com/Lachee/koala-bot/blob/master/KoalaBot/Starwatch/StarwatchClient.cs#L16).
+
+##  Servers Running Starwatch
+_feel free to create PR to add your server_
+* [iLoveBacons](https://ilovebacons.com)
+
