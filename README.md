@@ -1,5 +1,5 @@
+<img align="left" src="https://github.com/Lachee/starwatch/raw/master/Content/starwatch.png" width=256>
 
-# Starwatch
 Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
 It provides stability to the ilovebacons server, account management, access control and a lot more! It works silently in the background and you may not know it, but is the reason why ilovebacons has had great continous uptimes.
 To prove its worth, it has gone through not 1, but 2 seperate server wipes by bacon and still has all its records and data!
