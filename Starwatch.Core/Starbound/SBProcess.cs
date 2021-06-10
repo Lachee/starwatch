@@ -165,17 +165,9 @@ namespace Starwatch.Starbound
                     string result = sb.ToString();
                     */
 
-                    try
-                    {
-                        string result = _process.StandardOutput.ReadLine();
-                        if (result != null && result.Length > 0)
-                            p_EnqueueContent(result);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError("Error processing logs: " + ex.ToString());
-                    }
-                    
+                    string result = _process.StandardOutput.ReadLine();
+                    if (result != null && result.Length > 0) 
+                        p_EnqueueContent(result);
                 }
             }
             catch (Exception e)

@@ -54,11 +54,10 @@ namespace Starwatch.Monitoring
         private async void OnPlayerConnected(Player player)
         {
             //Kick anyone that doesn't have an IP address due to a 'Time Out'
-            
             if (string.IsNullOrWhiteSpace(player.IP))
             {
-                //Logger.Log("Kicking {0} for no address.", player);
-                //await Server.Kick(player, NoAddressReason);
+                Logger.Log("Kicking {0} for no address.", player);
+                await Server.Kick(player, NoAddressReason);
                 return;
             }
 
