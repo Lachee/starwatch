@@ -55,6 +55,7 @@ function formatStarboundTags(name, shadowClass = null) {
 	
 	//Make sure we have a name
 	if (name == null) return "";
+	name = escapeHtml(name);
 	
 	//prepare the regex
 	var re = "/\\^(.*?)(?=\\s*\\;)\\;/"; 
@@ -167,3 +168,13 @@ function escapeHtml(text) {
 	var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
 	return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
+
+//Source: https://stackoverflow.com/questions/822452/strip-html-from-text-javascript
+/*
+function stripHtml(html)
+{
+   let tmp = document.createElement("DIV");
+   tmp.innerHTML = html;
+   return tmp.textContent || tmp.innerText || "";
+}
+*/
