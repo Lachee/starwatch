@@ -84,7 +84,7 @@ namespace Starwatch.Entities
                 {
                     Content = line,
                     Level = LogLevel.Error,
-                    Author = "UNKOWN"
+                    Author = "UNKNOWN"
                 };
             }
 
@@ -95,17 +95,23 @@ namespace Starwatch.Entities
                 default:
                 case 'E':
                     level = LogLevel.Error;
-                    contents = contents.Substring(8);
+                    if (contents.Length > 8)
+                        contents = contents.Substring(8);
+                    
                     break;
 
                 case 'W':
                     level = LogLevel.Warning;
-                    contents = contents.Substring(7);
+                    if (contents.Length > 7)
+                        contents = contents.Substring(7);
+
                     break;
 
                 case 'I':
                     level = LogLevel.Info;
-                    contents = contents.Substring(7);
+                    if (contents.Length > 7)
+                        contents = contents.Substring(7);
+
                     break;
             }
 
