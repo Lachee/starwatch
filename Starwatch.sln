@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2003
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Starwatch", "Starwatch\Starwatch.csproj", "{DB510F70-84E8-420B-8C5F-1AE33C9942DD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Starwatch.Core", "Starwatch.Core\Starwatch.Core.csproj", "{58FCB696-1DE3-421F-A472-D71143F3A16D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Starwatch.Core.Tests", "Starwatch.Core.Tests\Starwatch.Core.Tests.csproj", "{7C152714-C5F2-4ED3-91FA-8FEAAAED9931}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C152714-C5F2-4ED3-91FA-8FEAAAED9931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C152714-C5F2-4ED3-91FA-8FEAAAED9931}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C152714-C5F2-4ED3-91FA-8FEAAAED9931}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C152714-C5F2-4ED3-91FA-8FEAAAED9931}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
