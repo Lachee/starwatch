@@ -70,6 +70,8 @@ namespace Starwatch.Monitoring
 
         public override async Task<bool> HandleMessage(Message msg)
         {
+            return false;
+            /*
             //Clean tallies then try to increment.
             CleanTallies();
             int total = IncrementTally(msg.Content);
@@ -97,7 +99,7 @@ namespace Starwatch.Monitoring
                 }
             }
 
-            return false;
+            return false;*/
 		}
 
         /// <summary>
