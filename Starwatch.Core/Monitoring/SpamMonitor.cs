@@ -58,6 +58,11 @@ namespace Starwatch.Monitoring
         /// </summary>
         public bool RestartServer { get; private set; }
 
+        /// <summary>
+        /// Enable/Disable this monitor.
+        /// </summary>
+        public bool MonitorEnabled { get; private set; }
+
         public SpamMonitor(Server server) : base(server, "SpamMonitor") { }
 
         public override Task Initialize()
@@ -65,11 +70,17 @@ namespace Starwatch.Monitoring
             TriggerThreshold            = Configuration.GetInt("theshold", 10) * Weight;
             DisableAnonymousConnections = Configuration.GetBool("disable_anonymous", true);
             RestartServer               = Configuration.GetBool("restart_server", true);
+            MonitorEnabled               = Configuration.GetBool("monitor_enabled", false);             
             return Task.CompletedTask;
         }
 
         public override async Task<bool> HandleMessage(Message msg)
         {
+            if (!MonitorEnabled)
+            {
+                return false;
+            }
+
             //Clean tallies then try to increment.
             CleanTallies();
             int total = IncrementTally(msg.Content);
