@@ -34,6 +34,7 @@ namespace Starwatch.Monitoring
 
         public bool AllowVPN { get; set; }
         public bool AllowAnonymousVPN { get; set; }
+        public bool EnableMonitor { get; set; }
 
         public VpnMonitor(Server server) : base(server, "VPNMonitor")
         {
@@ -47,12 +48,18 @@ namespace Starwatch.Monitoring
             IPv6Reason          = Configuration.GetString("reason_ipv6", IPv6Reason);
             AllowVPN            = Configuration.GetBool("allow_vpn", true);
             AllowAnonymousVPN   = Configuration.GetBool("allow_anonvpn", false);
+            EnableMonitor       = Configuration.GetBool("enable_monitor", false);
 
             return Task.CompletedTask;
         }
 
         private async void OnPlayerConnected(Player player)
         {
+            if (!EnableMonitor)
+            {
+                return;
+            }
+
             //Kick anyone that doesn't have an IP address due to a 'Time Out'
             if (string.IsNullOrWhiteSpace(player.IP))
             {
