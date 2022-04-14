@@ -84,7 +84,7 @@ namespace Starwatch.Entities
                 {
                     Content = line,
                     Level = LogLevel.Error,
-                    Author = "UNKOWN"
+                    Author = "UNKNOWN"
                 };
             }
 
