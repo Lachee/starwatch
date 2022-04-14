@@ -90,23 +90,40 @@ namespace Starwatch.Entities
 
             //Parse the level
             var level = LogLevel.Info;
-            switch (contents[1])
+
+            if (contents[0] == '[')
             {
-                default:
-                case 'E':
-                    level = LogLevel.Error;
-                    contents = contents.Substring(8);
-                    break;
+                switch (contents[1])
+                {
+                    default:
+                    case 'E':
+                        level = LogLevel.Error;
+                        if (contents.Length > 8)
+                        {
+                            contents = contents.Substring(8);
+                        }
+                        break;
 
-                case 'W':
-                    level = LogLevel.Warning;
-                    contents = contents.Substring(7);
-                    break;
+                    case 'W':
+                        level = LogLevel.Warning;
+                        if (contents.Length > 7)
+                        {
+                            contents = contents.Substring(7);
+                        }
+                        break;
 
-                case 'I':
-                    level = LogLevel.Info;
-                    contents = contents.Substring(7);
-                    break;
+                    case 'I':
+                        level = LogLevel.Info;
+                        if (contents.Length > 7)
+                        {
+                            contents = contents.Substring(7);
+                        }
+                        break;
+                }
+            }
+            else
+            {
+                level = LogLevel.Error;
             }
 
             //If we are info, then we should get the message and author.
