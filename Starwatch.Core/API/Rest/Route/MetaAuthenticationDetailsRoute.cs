@@ -19,6 +19,7 @@ END LICENSE DISCLAIMER
 */
 using Starwatch.API.Rest.Routing;
 using Starwatch.API.Web;
+using System;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -29,6 +30,42 @@ namespace Starwatch.API.Rest.Route
         public string AccountName { get; set; }
 
         public MetaAuthenticationDetailsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
+
+        class MetaAuthenticationDetailsResponse
+        {
+            public string Name { get; set; } = string.Empty;
+
+            public bool IsBot { get; set; } = false;
+
+            public bool IsUser { get; set; } = false;
+
+            public bool IsAdmin { get; set; } = false;
+
+            public AuthLevel AuthType { get; set; } = AuthLevel.Anonymous;
+
+            public DateTime LastActionTime { get; set; } = DateTime.MinValue;
+
+            public long TotalActionsPerformed { get; set; } = 0;
+
+            public string LastAction { get; set; } = string.Empty;
+
+            public static MetaAuthenticationDetailsResponse FromAuthentication (Authentication auth)
+            {
+                MetaAuthenticationDetailsResponse response = new MetaAuthenticationDetailsResponse
+                {
+                    Name = auth.Name,
+                    IsBot = auth.IsBot,
+                    IsUser = auth.IsUser,
+                    IsAdmin = auth.IsAdmin,
+                    AuthType = auth.AuthLevel,
+                    LastActionTime = auth.LastActionTime,
+                    TotalActionsPerformed = auth.TotalActionsPerformed,
+                    LastAction = auth.LastAction
+                };
+
+                return response;
+            }
+        }
 
         public override RestResponse OnGet(Query query)
         {
@@ -48,7 +85,8 @@ namespace Starwatch.API.Rest.Route
                 return RestResponse.ResourceNotFound;
 
             //Return the authentication
-            return new RestResponse(RestStatus.OK, authentication);
+            return new RestResponse(RestStatus.OK,
+                MetaAuthenticationDetailsResponse.FromAuthentication(authentication));
         }
     }
 }

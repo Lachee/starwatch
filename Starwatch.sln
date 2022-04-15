@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Starwatch", "Starwatch\Star
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Starwatch.Core", "Starwatch.Core\Starwatch.Core.csproj", "{58FCB696-1DE3-421F-A472-D71143F3A16D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Starwatch.Core.Tests", "Starwatch.Core.Tests\Starwatch.Core.Tests.csproj", "{1B94C75B-6DD0-4CA1-9441-3E056321A708}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.ReleaseBuildOnly|Any CPU.ActiveCfg = ReleaseBuildOnly|Any CPU
 		{58FCB696-1DE3-421F-A472-D71143F3A16D}.ReleaseBuildOnly|Any CPU.Build.0 = ReleaseBuildOnly|Any CPU
+		{1B94C75B-6DD0-4CA1-9441-3E056321A708}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B94C75B-6DD0-4CA1-9441-3E056321A708}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B94C75B-6DD0-4CA1-9441-3E056321A708}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B94C75B-6DD0-4CA1-9441-3E056321A708}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
