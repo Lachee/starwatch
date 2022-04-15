@@ -205,7 +205,7 @@ namespace Starwatch.Entities
             return true;
         }
 
-        private static Ban FromDbDataReader(DbDataReader reader)
+        public static Ban FromDbDataReader(DbDataReader reader)
         {
             return new Ban()
             {
