@@ -40,7 +40,10 @@ namespace Starwatch.Monitoring
         public bool EnableMonitor { get; set; }
 
         public Announcement[] Announcements = new Announcement[0];
+
         public Timer[] AnnouncementTimers = new Timer[0];
+
+        private bool Locked = false;
 
         public AnnouncementMonitor(Server server) : base(server, "AnnouncementMonitor")
         {
@@ -49,6 +52,11 @@ namespace Starwatch.Monitoring
 
         private void SendAnnouncement (int id)
         {
+            if (Locked)
+            {
+                return;
+            }
+
             var res = Server.Rcon.BroadcastAsync(Announcements[id].Message).Result;
             if (!res.Success)
             {
@@ -82,7 +90,14 @@ namespace Starwatch.Monitoring
                 return Task.CompletedTask;
             }
 
-            // may not be necessary, not too familiar if it reloads monitors or not.
+            Reload();
+
+            //Return the completed task
+            return Task.CompletedTask;
+        }
+
+        public void Reload ()
+        {
             foreach (Timer timer in AnnouncementTimers)
             {
                 if (timer is null)
@@ -99,7 +114,7 @@ namespace Starwatch.Monitoring
 
             AnnouncementTimers = new Timer[Announcements.Length];
 
-            for (int i=0; i<Announcements.Length; i++)
+            for (int i = 0; i < Announcements.Length; i++)
             {
                 int j = i;
                 if (!Announcements[i].Enabled)
@@ -117,9 +132,20 @@ namespace Starwatch.Monitoring
 
                 AnnouncementTimers[i].Start();
             }
+        }
 
-            //Return the completed task
-            return Task.CompletedTask;
+        public bool Lock ()
+        {
+            if (Locked)
+                return false;
+
+            Locked = true;
+            return true;
+        }
+
+        public void Unlock ()
+        {
+            Locked = false;
         }
     }
 }
