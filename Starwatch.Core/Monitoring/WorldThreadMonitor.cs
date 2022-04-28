@@ -69,10 +69,6 @@ namespace Starwatch.Monitoring
                     if (int.TryParse(client, out var cid))
                         report.Player = Server.Connections.GetPlayer(cid);
 
-                    //If we are an IO exception, throw.
-                    if (report.Exception.Contains("(IOException)"))
-                        throw new ServerShutdownException("World Thread Exception - IO Exception");
-
                     /* Don't do any of this. We want to leave the palyer as is. They can go free.
                     //Parse the name
                     if (int.TryParse(client, out var cid))
