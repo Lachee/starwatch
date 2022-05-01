@@ -55,6 +55,15 @@ namespace Starwatch.API.Rest.Route
 
             PlayerKickResponse response = new PlayerKickResponse();
             bool performedQuery = false;
+            int? duration = null;
+
+            int nDuration = query.GetInt("duration", -1);
+
+            if (nDuration != -1)
+            {
+                duration = nDuration;
+                reason += $"\nTimeout for {duration} seconds.";
+            }
 
             if (query.ContainsKey("ip"))
             {
@@ -149,11 +158,11 @@ namespace Starwatch.API.Rest.Route
             foreach (Player p in res)
             {
                 if (async)
-                    p.Kick(reason).CallAsyncWithLog(logger, "Exception kicking user: {0}");
+                    p.Kick(reason, duration).CallAsyncWithLog(logger, "Exception kicking user: {0}");
 
                 else
                 {
-                    var rconRes = p.Kick(reason).Result;
+                    var rconRes = p.Kick(reason, duration).Result;
 
                     if (rconRes.Success)
                         response.SuccessfulKicks++;
