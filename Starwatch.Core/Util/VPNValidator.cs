@@ -26,7 +26,7 @@ namespace Starwatch.Util
 {
     public class VPNValidator
     {
-        private IPRange[] _ranges;
+        private IPRange[] _ranges = new IPRange[0];
         public struct IPRange
         {
             public uint NetworkAddress;
@@ -39,6 +39,9 @@ namespace Starwatch.Util
         /// <param name="filepath"></param>
         public void Load(string filepath)
         {
+            if (!File.Exists(filepath))
+                return;
+
             string[] lines = File.ReadAllLines(filepath);
             List<IPRange> ranges = new List<IPRange>(lines.Length);
             foreach(var l in lines)
