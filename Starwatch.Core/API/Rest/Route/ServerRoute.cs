@@ -108,14 +108,6 @@ namespace Starwatch.API.Rest.Route
             {
                 if (async)
                 {
-                    /*var task = Handler.Starbound.Configurator.SaveAsync(reload).ContinueWith((t) =>
-                    {
-                        if (!(t.Exception is null))
-                        {
-                            Starbound.Logger.LogError(t.Exception, "Exception saving config: {0}");
-                        }
-                    }, TaskContinuationOptions.OnlyOnFaulted);*/
-
                     genericTask = Handler.Starbound.Configurator.SaveAsync(reload)
                     .CallAsyncWithLog(
                         Starbound.Logger,
