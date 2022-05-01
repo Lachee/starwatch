@@ -58,7 +58,7 @@ namespace Starwatch.Monitoring
 
         public override Task Initialize()
         {
-            EnableMonitor = Configuration.GetBool("enable_monitor", false);
+            EnableMonitor = Configuration.GetBool("enable_monitor", true);
             bool hasAnnouncements = Configuration.TryGetObject<Announcement[]>("announcements", out Announcements);
             
             if (!hasAnnouncements)
