@@ -40,7 +40,7 @@ namespace Starwatch.API.Rest.Route
 #endif
 
             // manual but shouldn't be too annoying to update if done periodically.
-            int version = 20220415;
+            int version = 20220501;
 
             return new RestResponse(RestStatus.OK, "", $"{version}{buildSuffix}");
         }
