@@ -151,7 +151,7 @@ namespace Starwatch.API.Rest.Route
                 return new RestResponse(
                     RestStatus.BadRequest,
                     $"Must provide a valid query parameter. Valid options include: " +
-                    $"'ip', 'uuid', 'name', 'nickname', 'account', 'cid'."
+                    $"'ip', 'uuid', 'username', 'nickname', 'account', 'cid'."
                 );
             }
 
