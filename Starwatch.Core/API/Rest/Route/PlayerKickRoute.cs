@@ -81,7 +81,7 @@ namespace Starwatch.API.Rest.Route
             {
                 res = res.Where(x => 
                     x.UUID != null && 
-                    x.UUID.Equals(query.GetString("uuid", "-"), StringComparison.InvariantCultureIgnoreCase));
+                    x.UUID.Equals(query.GetString("uuid", ""), StringComparison.InvariantCultureIgnoreCase));
 
                 if (res.Count() == 0)
                     return new RestResponse(RestStatus.ResourceNotFound, $"No user with UUID '{query.GetString("uuid", "-")}' was found.");
@@ -105,7 +105,7 @@ namespace Starwatch.API.Rest.Route
             {
                 res = res.Where(x =>
                     x.Nickname != null &&
-                    x.Nickname.Equals(query.GetString("nickname", "-"), StringComparison.InvariantCultureIgnoreCase));
+                    x.Nickname.Equals(query.GetString("nickname", ""), StringComparison.InvariantCultureIgnoreCase));
 
                 if (res.Count() == 0)
                     return new RestResponse(RestStatus.ResourceNotFound, $"No user with nickname '{query.GetString("nickname", "-")}' was found.");
@@ -117,10 +117,10 @@ namespace Starwatch.API.Rest.Route
             {
                 res = res.Where(x =>
                     x.AccountName != null &&
-                    x.AccountName.Equals(query.GetString("account", Account.Annonymous), StringComparison.InvariantCultureIgnoreCase));
+                    x.AccountName.Equals(query.GetString("account", ""), StringComparison.InvariantCultureIgnoreCase));
 
                 if (res.Count() == 0)
-                    return new RestResponse(RestStatus.ResourceNotFound, $"No user with account name '{query.GetString("account", Account.Annonymous)}' was found.");
+                    return new RestResponse(RestStatus.ResourceNotFound, $"No user with account name '{query.GetString("account", "")}' was found.");
 
                 performedQuery = true;
             }
