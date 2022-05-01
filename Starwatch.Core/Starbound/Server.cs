@@ -237,6 +237,18 @@ namespace Starwatch.Starbound
                 return await Task.FromResult(new Rcon.RconResponse() { Success = false, Message = "Rcon not enabled" });
             }
 
+            // Prevents a blocky error from Starbound.
+            if (Connections.GetPlayer(connection) == null)
+            {
+                string error = $"Cannot kick a player (CID: {connection}) that isn't connected.";
+                Logger.LogWarning(error);
+
+                return await Task.FromResult(new Rcon.RconResponse() { 
+                    Success = false, 
+                    Message = error
+                });
+            }
+
             //Kick the connection
             var response = await Rcon.Kick(connection, reason);
             OnKick?.Invoke(this, connection, reason, -1);
