@@ -278,7 +278,7 @@ namespace Starwatch.API.Rest
                 {
                     if (!TryParseContent(route.PayloadType, body, contentType, out payload))
                     {
-                        Logger.LogError("BAD REQUEST: Invalid formatting");
+                        Logger.LogError($"BAD REQUEST: Invalid formatting for {route.PayloadType.FullName}");
                         return new RestResponse(RestStatus.BadRequest, $"Invalid payload format for {contentType}.");
                     }
                 }
