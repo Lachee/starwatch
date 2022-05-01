@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -318,6 +319,19 @@ namespace Starwatch.Starbound
         public async Task<long> Ban(Ban ban, bool reload = true)
         {
             Logger.Log("Adding ban: " + ban);
+
+            #region Try not to brick the server config with NetworkException
+
+            if (!(ban.IP is null))
+            {
+                IPAddress parsedIp = null;
+                bool parsedOk = IPAddress.TryParse(ban.IP, out parsedIp);
+
+                if (!parsedOk)
+                    throw new ArgumentException(nameof(ban.IP), "IP must be a valid IP Address");
+            }
+            
+            #endregion
 
             //Add the ban, storing the tocket and saving the settings
             long ticket = await Configurator.AddBanAsync(ban);
