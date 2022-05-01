@@ -73,14 +73,21 @@ namespace Starwatch.Entities
         /// <param name="moderator">The author of the ban</param>
         /// <returns></returns>
         public async Task<long> Ban(string reason, string moderator) => await Server.Ban(this, reason, moderator, true, true);
-        
+
 
         /// <summary>
         /// Kicks the user from the server. Only available if the server has RCON enabled.
         /// </summary>
         /// <param name="reason"></param>
         /// <returns></returns>
-        public async Task<Starbound.Rcon.RconResponse> Kick(string reason) => await Server.Kick(this, reason);
+        public async Task<Starbound.Rcon.RconResponse> Kick(string reason, int? duration = null)
+        {
+            if (duration == null)
+                return await Server.Kick(this, reason);
+
+            return await Server.Kick(this, reason, duration.Value);
+        }
+
 
         /// <summary>
         /// Gets the account linked to this player.
