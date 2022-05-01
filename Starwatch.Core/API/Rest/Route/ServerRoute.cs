@@ -24,6 +24,8 @@ using System;
 using Starwatch.API.Web;
 using Starwatch.API.Gateway;
 using Starwatch.API.Gateway.Event;
+using System.Threading.Tasks;
+using Starwatch.Extensions;
 
 namespace Starwatch.API.Rest.Route
 {
@@ -56,21 +58,98 @@ namespace Starwatch.API.Rest.Route
             if (AuthenticationLevel < AuthLevel.Admin) return RestResponse.Forbidden;
 
             //Prepare values
-            Payload payload = (Payload)payloadObject;
+            Payload payload = new Payload
+            {
+                AllowAnonymousConnections = null,
+                AllowAssetsMismatch = null,
+                MaxPlayers = null,
+                ServerName = null
+            };
+
+            try
+            {
+                payload = (Payload)payloadObject;
+            }
+            catch { }
+
             bool reload = query.GetBool("reload", true);
             bool async = query.GetBool(Query.AsyncKey, false);
             bool includeAll = query.GetBool("full", false);
+            bool dirty = false;
 
-            if (payload.AllowAnonymousConnections.HasValue) Handler.Starbound.Configurator.AllowAnonymousConnections = payload.AllowAnonymousConnections.Value;
-            if (payload.AllowAssetsMismatch.HasValue) Handler.Starbound.Configurator.AllowAssetsMismatch = payload.AllowAssetsMismatch.Value;
-            if (payload.MaxPlayers.HasValue) Handler.Starbound.Configurator.MaxPlayers = payload.MaxPlayers.Value;
-            if (payload.ServerName != null) Handler.Starbound.Configurator.ServerName = payload.ServerName;
+            if (payload.AllowAnonymousConnections.HasValue)
+            {
+                Handler.Starbound.Configurator.AllowAnonymousConnections = payload.AllowAnonymousConnections.Value;
+                dirty = true;
+            }
 
-           
+            if (payload.AllowAssetsMismatch.HasValue)
+            {
+                Handler.Starbound.Configurator.AllowAssetsMismatch = payload.AllowAssetsMismatch.Value;
+                dirty = true;
+            }
 
-            var task = Handler.Starbound.Configurator.SaveAsync(reload);
-            if (async) return RestResponse.Async;
-            return new RestResponse(RestStatus.OK, res:  GetCulledServerSettings(false, includeAll: includeAll));
+            if (payload.MaxPlayers.HasValue)
+            {
+                Handler.Starbound.Configurator.MaxPlayers = payload.MaxPlayers.Value;
+                dirty = true;
+            }
+
+            if (payload.ServerName != null)
+            {
+                Handler.Starbound.Configurator.ServerName = payload.ServerName;
+                dirty = true;
+            }
+
+            Task genericTask;
+
+            #region Saving server config if changes were made
+            if (dirty)
+            {
+                if (async)
+                {
+                    genericTask = Handler.Starbound.Configurator.SaveAsync(reload)
+                    .CallAsyncWithLog(
+                        Starbound.Logger,
+                        "Exception saving config: {0}"
+                    );
+                }
+                else
+                {
+                    Handler.Starbound.Configurator.SaveAsync(reload).RunSynchronously();
+                }
+            }
+            #endregion
+
+            #region Reloading server if no changes were made
+            if (reload && !dirty)
+            {
+                if (async)
+                {
+                    genericTask = Starbound.Rcon.ReloadServerAsync()
+                    .CallAsyncWithLog(
+                        Starbound.Logger,
+                        "Exception reloading server config: {0}"
+                    );
+                }
+                else
+                {
+                    var resp = Starbound.Rcon.ReloadServerAsync().Result;
+                    var serverSettings = GetCulledServerSettings(false, includeAll: includeAll);
+
+                    if (!resp.Success)
+                        return new RestResponse(RestStatus.InternalError, "Could not reload the server", res: serverSettings);
+
+                    else
+                        return new RestResponse(RestStatus.OK, res: serverSettings);
+                }
+            }
+            #endregion
+
+            if (async)
+                return new RestResponse(RestStatus.Async);
+
+            return new RestResponse(RestStatus.OK, res: GetCulledServerSettings(false, includeAll: includeAll));
         }
 
         public override RestResponse OnGet(Query query)

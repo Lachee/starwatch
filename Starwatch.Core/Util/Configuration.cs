@@ -299,7 +299,12 @@ namespace Starwatch.Util
         {
             try
             {
-                return Data.GetValue(key).ToObject<bool>();
+                var val = Data.GetValue(key);
+
+                if (val is null)
+                    throw new KeyNotFoundException($"Key: '{key}' was not found.");
+
+                return val.ToObject<bool>();
             }
             catch (Exception e)
             {
@@ -316,7 +321,12 @@ namespace Starwatch.Util
         {
             try
             {
-                return Data.GetValue(key).ToObject<string>();
+                var val = Data.GetValue(key);
+
+                if (val is null)
+                    throw new KeyNotFoundException($"Key: '{key}' was not found.");
+
+                return val.ToObject<string>();
             }
             catch (Exception e)
             {
@@ -344,7 +354,12 @@ namespace Starwatch.Util
         {
             try
             {
-                return Data.GetValue(key).ToObject<T>();
+                var val = Data.GetValue(key);
+
+                if (val is null)
+                    throw new KeyNotFoundException($"Key: '{key}' was not found.");
+
+                return val.ToObject<T>();
             }
             catch (Exception e)
             {

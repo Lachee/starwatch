@@ -191,7 +191,7 @@ namespace Starwatch.API.Rest
                 //Update the authentications update
                 //Really dodgy hack, but I dont want my screen flooded with /statistics
                 if (!url.EndsWith("statistics") && !url.EndsWith("player/all"))
-                    Logger.Log("Authentication {0} requested {1}", authentication, url);
+                    Logger.Log("Authentication {0} requested [{2}] {1}", authentication, url, method.ToString().ToUpperInvariant());
                 
                 //Make sure we actually have meet the minimum floor
                 if (authentication.AuthLevel < MinimumAuthentication)
@@ -278,7 +278,7 @@ namespace Starwatch.API.Rest
                 {
                     if (!TryParseContent(route.PayloadType, body, contentType, out payload))
                     {
-                        Logger.LogError("BAD REQUEST: Invalid formatting");
+                        Logger.LogError($"BAD REQUEST: Invalid formatting for {route.PayloadType.FullName}");
                         return new RestResponse(RestStatus.BadRequest, $"Invalid payload format for {contentType}.");
                     }
                 }
