@@ -92,8 +92,15 @@ namespace Starwatch.API.Rest.Route
             ban.CreatedDate = DateTime.UtcNow;
 
             //Perform the ban and get the ban result
-            var task = Starbound.Ban(ban);
-            ban = Starbound.Configurator.GetBanAsync(task.Result).Result;
+            try
+            {
+                var task = Starbound.Ban(ban);
+                ban = Starbound.Configurator.GetBanAsync(task.Result).Result;
+            }
+            catch
+            {
+                return new RestResponse(RestStatus.InternalError, "Failed to add the ban, likely due to an invalid IP Address.");
+            }
             
             //Kick the player if nessary, waiting for it to finish.
             if (player != null)
