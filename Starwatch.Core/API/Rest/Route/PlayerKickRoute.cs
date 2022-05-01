@@ -27,7 +27,7 @@ using Starwatch.Extensions;
 
 namespace Starwatch.API.Rest.Route
 {
-    [Route("/player/kick")]
+    [Route("/player/kick", AuthLevel.Admin)]
     class PlayerKickRoute : RestRoute
     {
         private Logging.Logger logger { get; set; }
