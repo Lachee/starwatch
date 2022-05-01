@@ -60,14 +60,6 @@ namespace Starwatch.Monitoring
                 return;
             }
 
-            //Kick anyone that doesn't have an IP address due to a 'Time Out'
-            if (string.IsNullOrWhiteSpace(player.IP))
-            {
-                Logger.Log("Kicking {0} for no address.", player);
-                await Server.Kick(player, NoAddressReason);
-                return;
-            }
-
             //Kick anyone that is VPN but doesnt have an account.
             if (player.IsVPN && (!AllowVPN || (!AllowAnonymousVPN && player.IsAnonymous)))
             {
