@@ -191,7 +191,7 @@ namespace Starwatch.API.Rest
                 //Update the authentications update
                 //Really dodgy hack, but I dont want my screen flooded with /statistics
                 if (!url.EndsWith("statistics") && !url.EndsWith("player/all"))
-                    Logger.Log("Authentication {0} requested {1}", authentication, url);
+                    Logger.Log("Authentication {0} requested [{2}] {1}", authentication, url, method.ToString().ToUpperInvariant());
                 
                 //Make sure we actually have meet the minimum floor
                 if (authentication.AuthLevel < MinimumAuthentication)
