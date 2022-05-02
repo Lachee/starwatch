@@ -84,7 +84,7 @@ namespace Starwatch.API.Rest.Route
                 return new RestResponse(RestStatus.InternalError, "AnnouncementMonitor was not found.");
             }
 
-            AnnouncementMonitor.Announcement[] announcements = mon.Announcements;
+            var announcements = mon.Announcements;
 
             if (query.ContainsKey("id"))
             {
@@ -349,8 +349,7 @@ namespace Starwatch.API.Rest.Route
                 return new RestResponse(RestStatus.InternalError, RESOURCE_LOCKED);
             }
 
-            AnnouncementMonitor.Announcement[] announcements
-                = new AnnouncementMonitor.Announcement[mon.Announcements.Length + 1];
+            var announcements = new AnnouncementMonitor.Announcement[mon.Announcements.Length + 1];
 
             for (int i = 0; i < mon.Announcements.Length; i++)
             {
