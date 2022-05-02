@@ -47,7 +47,7 @@ namespace Starwatch.Monitoring
 
         public AnnouncementMonitor(Server server) : base(server, "AnnouncementMonitor")
         {
-            Logger.Colourise = true;
+            Logger.Colourise = false;
         }
 
         private void SendAnnouncement(int id)
