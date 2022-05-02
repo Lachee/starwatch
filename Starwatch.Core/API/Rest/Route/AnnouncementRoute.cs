@@ -34,7 +34,7 @@ using System.Diagnostics;
 namespace Starwatch.API.Rest.Route
 {
     [Route("/announcement", AuthLevel.Admin)]
-    class AnnouncementRoute : RestRoute, IGatewayRoute
+    class AnnouncementRoute : RestRoute
     {
         const string RESOURCE_LOCKED = "Resource is currently locked. Please wait and try again.";
         const string NO_MONITOR = "AnnouncementMonitor was not found.";
@@ -45,13 +45,6 @@ namespace Starwatch.API.Rest.Route
 
         public AnnouncementRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
         public override Type PayloadType => typeof(AnnouncementPatch);
-        public string GetRouteName() => "/announcement";
-
-        public void SetGateway(EventConnection gateway)
-        {
-            Handler = gateway.API.RestHandler;
-            Authentication = gateway.Authentication;
-        }
 
         /// <summary>
         /// Gets the account exists and its admin state.
