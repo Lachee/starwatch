@@ -41,9 +41,9 @@ namespace Starwatch.Monitoring
 
         public Announcement[] Announcements = new Announcement[0];
 
-        public Timer[] AnnouncementTimers = new Timer[0];
+        public Timer[] AnnouncementTimers { get; set; } = new Timer[0];
 
-        private bool Locked = false;
+        private bool Locked { get; set; } = false;
 
         public AnnouncementMonitor(Server server) : base(server, "AnnouncementMonitor")
         {
@@ -67,7 +67,10 @@ namespace Starwatch.Monitoring
         public override Task Initialize()
         {
             EnableMonitor = Configuration.GetBool("enable_monitor", true);
-            bool hasAnnouncements = Configuration.TryGetObject<Announcement[]>("announcements", out Announcements);
+
+            Announcement[] announcements = null;
+            bool hasAnnouncements = Configuration.TryGetObject<Announcement[]>("announcements", out announcements);
+            Announcements = announcements;
 
             if (!hasAnnouncements)
             {
