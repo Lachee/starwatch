@@ -239,7 +239,7 @@ namespace Starwatch.API.Rest.Route
 #endif
 
         /// <summary>
-        /// Updates the account
+        /// Updates the announcement
         /// </summary>
         /// <param name="query"></param>
         /// <param name="payloadObject"></param>
@@ -261,20 +261,9 @@ namespace Starwatch.API.Rest.Route
                 return new RestResponse(RestStatus.BadRequest, "No payload.");
             }
 
-            if (!query.ContainsKey("id"))
-            {
-                return new RestResponse(RestStatus.BadRequest, "Must contain an id.");
-            }
+            AnnouncementPatch payload = (AnnouncementPatch) payloadObject;
 
-            int id = 0;
-            bool ok = int.TryParse(query["id"], out id);
-
-            if (!ok)
-            {
-                return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_INTEGER);
-            }
-
-            if (id < 0)
+            if (payload.Id < 0)
             {
                 return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_POSITIVE);
             }
@@ -295,13 +284,13 @@ namespace Starwatch.API.Rest.Route
 
             AnnouncementMonitor.Announcement obj = null;
 
-            if (!(mon.Announcements.Length > id))
+            if (!(mon.Announcements.Length > payload.Id))
             {
                 mon.Unlock();
                 return new RestResponse(RestStatus.BadRequest, "Announcement with that id does not exist.");
             }
 
-            obj = mon.Announcements[id];
+            obj = mon.Announcements[payload.Id];
 
             AnnouncementPatch oa = (AnnouncementPatch)payloadObject;
 
@@ -316,7 +305,7 @@ namespace Starwatch.API.Rest.Route
                 Interval = interval
             };
 
-            mon.Announcements[id] = newObj;
+            mon.Announcements[payload.Id] = newObj;
 
             try
             {
@@ -331,7 +320,7 @@ namespace Starwatch.API.Rest.Route
 
             mon.Unlock();
             mon.Reload();
-            return new RestResponse(RestStatus.OK, $"Updated announcement #{id}");
+            return new RestResponse(RestStatus.OK, $"Updated announcement #{payload.Id}", newObj);
         }
 
         public override RestResponse OnPost(Query query, object payloadObject)

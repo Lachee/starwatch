@@ -27,6 +27,7 @@ namespace Starwatch.API.Rest.Route.Entities
     [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     struct AnnouncementPatch
     {
+        public int Id { get; set; }
         public string Message { get; set; }
         public double? Interval { get; set; }
         public bool? Enabled { get; set; }
