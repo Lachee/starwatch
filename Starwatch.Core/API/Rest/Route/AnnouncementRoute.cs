@@ -93,8 +93,7 @@ namespace Starwatch.API.Rest.Route
                 bool ok = int.TryParse(query["id"], out id);
                 if (!ok)
                 {
-                    // probably unnecessary
-                    id = 0;
+                    return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_INTEGER);
                 }
 
                 if (id < 0)
