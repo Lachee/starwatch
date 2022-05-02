@@ -118,13 +118,13 @@ namespace Starwatch.API.Rest.Route
             }
             else
             {
-                // Tells how many announcements there are.
+                // Returns all announcements
                 if (announcements.Length == 1)
                 {
                     return new RestResponse(RestStatus.OK, "There is 1 announcement.", 1);
                 }
 
-                return new RestResponse(RestStatus.OK, $"There are {announcements.Length} announcements.", announcements.Length);
+                return new RestResponse(RestStatus.OK, $"There are {announcements.Length} announcements.", announcements);
             }
         }
 
