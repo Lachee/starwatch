@@ -25,7 +25,7 @@ using Starwatch.API.Web;
 
 namespace Starwatch.API.Rest.Route
 {
-    [Route("/player")]
+    [Route("/player", AuthLevel.Admin)]
     class PlayerRoute : RestRoute
     {
         public PlayerRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
