@@ -77,6 +77,10 @@ namespace Starwatch.API.Rest.Route
                 if (!await Starbound.Configurator.RemoveAccountAsync(Account))
                     return false;
 
+                //Logout anyone that previously connected
+                foreach (var player in Starbound?.Connections?.GetCopiedPlayersEnumerable().Where(p => p != null && p.AccountName != null && p.AccountName.Equals(Account.Name)))
+                    await player.Kick("Account details changed.");
+
                 return await Starbound.SaveConfigurationAsync(true);
             });
 
