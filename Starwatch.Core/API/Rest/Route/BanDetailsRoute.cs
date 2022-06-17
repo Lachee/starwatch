@@ -1,7 +1,7 @@
 /*
 START LICENSE DISCLAIMER
 Starwatch is a Starbound Server manager with player management, crash recovery and a REST and websocket (live) API. 
-Copyright(C) 2020 Lachee
+Copyright(C) 2022 Lachee
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -36,12 +36,11 @@ namespace Starwatch.API.Rest.Route
         public override Type PayloadType => typeof(Ban);
 
         public BanDetailsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
-        public BanDetailsRoute(Ban ban) : base(null, null)
-        {
-            this.Ban = ban;
-        }
+
+        public BanDetailsRoute(Ban ban) : base(null, null) => Ban = ban;
 
         public string GetRouteName() => "/ban/:ticket";
+
         public void SetGateway(EventConnection gateway)
         {
             Handler = gateway.API.RestHandler;
@@ -52,9 +51,7 @@ namespace Starwatch.API.Rest.Route
         /// Gets a ban
         /// </summary>
         public override RestResponse OnGet(Query query)
-        {
-            return new RestResponse(RestStatus.OK, res: Ban);
-        }
+        => new RestResponse(RestStatus.OK, res: Ban);
 
         /// <summary>
         /// Deletes a ban
@@ -67,10 +64,9 @@ namespace Starwatch.API.Rest.Route
 
             //Save the settings and reload
             var task = Starbound.SaveConfigurationAsync(true);
-            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return new RestResponse(RestStatus.OK, res: task.Result);
+            return query.GetBool(Query.AsyncKey, false) 
+                ? RestResponse.Async 
+                : new RestResponse(RestStatus.OK, res: task.Result);
         }
-
-
     }
 }
