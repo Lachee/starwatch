@@ -51,16 +51,16 @@ namespace Starwatch.API.Rest.Route
 
             public static MetaAuthenticationDetailsResponse FromAuthentication (Authentication auth)
             {
-                MetaAuthenticationDetailsResponse response = new MetaAuthenticationDetailsResponse
+                var response = new MetaAuthenticationDetailsResponse
                 {
-                    Name = auth.Name,
-                    IsBot = auth.IsBot,
-                    IsUser = auth.IsUser,
-                    IsAdmin = auth.IsAdmin,
-                    AuthType = auth.AuthLevel,
-                    LastActionTime = auth.LastActionTime,
+                    Name                  = auth.Name,
+                    IsBot                 = auth.IsBot,
+                    IsUser                = auth.IsUser,
+                    IsAdmin               = auth.IsAdmin,
+                    AuthType              = auth.AuthLevel,
+                    LastActionTime        = auth.LastActionTime,
                     TotalActionsPerformed = auth.TotalActionsPerformed,
-                    LastAction = auth.LastAction
+                    LastAction            = auth.LastAction
                 };
 
                 return response;
@@ -70,10 +70,8 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             Authentication authentication;
-            if (AccountName.Equals("@me")) 
-            {
+            if (AccountName.Equals("@me"))
                 authentication = Authentication;
-            }
             else
             {
                 if (AuthenticationLevel < AuthLevel.SuperBot) return RestResponse.Forbidden;
@@ -81,7 +79,7 @@ namespace Starwatch.API.Rest.Route
             }
 
             //We could not find the authentication
-            if (authentication == null)
+            if (authentication is null)
                 return RestResponse.ResourceNotFound;
 
             //Return the authentication
