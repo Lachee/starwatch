@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Starwatch.Database;
 
 namespace Starwatch.Entities
 {
@@ -34,12 +33,14 @@ namespace Starwatch.Entities
         /// <returns></returns>
         public static async Task<HashSet<SystemWorld>> SearchCachedSystemsAsync(DbContext context)
         {
-            var systems = await context.ExecuteAsync<SystemWorld>("SELECT min(z) as z, x, y FROM !worlds GROUP BY x, y", (reader) =>
+            var systems = await context.ExecuteAsync("SELECT min(z) as z, x, y FROM !worlds GROUP BY x, y", (reader) =>
             {
-                var s = new SystemWorld();
-                s.Z = reader.GetInt64("z");
-                s.X = reader.GetInt64("x");
-                s.Y = reader.GetInt64("y");
+                var s = new SystemWorld
+                {
+                    Z = reader.GetInt64("z"),
+                    X = reader.GetInt64("x"),
+                    Y = reader.GetInt64("y")
+                };
                 return s;
             });
 
@@ -60,12 +61,14 @@ namespace Starwatch.Entities
                 ["ymax"] = yMax.GetValueOrDefault(long.MaxValue),
             };
 
-            var systems = await context.ExecuteAsync<SystemWorld>($"SELECT min(z) as z, x, y FROM !worlds x > :xmin AND x < :xmax AND y > :ymin AND y < :ymin GROUP BY x, y", (reader) =>
+            var systems = await context.ExecuteAsync($"SELECT min(z) as z, x, y FROM !worlds x > :xmin AND x < :xmax AND y > :ymin AND y < :ymin GROUP BY x, y", (reader) =>
             {
-                var s = new SystemWorld();
-                s.Z = reader.GetInt64("z");
-                s.X = reader.GetInt64("x");
-                s.Y = reader.GetInt64("y");
+                var s = new SystemWorld
+                {
+                    Z = reader.GetInt64("z"),
+                    X = reader.GetInt64("x"),
+                    Y = reader.GetInt64("y")
+                };
                 return s;
             }, arguments);
 
