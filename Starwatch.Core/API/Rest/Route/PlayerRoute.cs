@@ -33,15 +33,12 @@ namespace Starwatch.API.Rest.Route
         {
             var enumerator = Handler.Starbound.Connections.GetCopiedPlayersEnumerable();
 
-            string username, nickname, accountname, uuid, location;
-            bool admin;
-
             //Filter the result
-            if (query.TryGetString("uuid", out uuid)) enumerator = enumerator.Where(p => p.UUID != null && p.UUID.Equals(uuid, StringComparison.InvariantCultureIgnoreCase));
-            if (query.TryGetString("username", out username)) enumerator = enumerator.Where(p => p.Username.Equals(username, StringComparison.InvariantCultureIgnoreCase));
-            if (query.TryGetString("nickname", out nickname)) enumerator = enumerator.Where(p => p.Nickname.Equals(nickname, StringComparison.InvariantCultureIgnoreCase));
-            if (query.TryGetString("location", out location)) enumerator = enumerator.Where(p => p.Location.Whereami.Equals(location, StringComparison.InvariantCultureIgnoreCase));
-            if (query.TryGetString("account", out accountname))
+            if (query.TryGetString("uuid", out string uuid)) enumerator = enumerator.Where(p => p.UUID != null && p.UUID.Equals(uuid, StringComparison.InvariantCultureIgnoreCase));
+            if (query.TryGetString("username", out string username)) enumerator = enumerator.Where(p => p.Username.Equals(username, StringComparison.InvariantCultureIgnoreCase));
+            if (query.TryGetString("nickname", out string nickname)) enumerator = enumerator.Where(p => p.Nickname.Equals(nickname, StringComparison.InvariantCultureIgnoreCase));
+            if (query.TryGetString("location", out string location)) enumerator = enumerator.Where(p => p.Location.Whereami.Equals(location, StringComparison.InvariantCultureIgnoreCase));
+            if (query.TryGetString("account", out string accountname))
             {
                 enumerator = enumerator.Where(p => 
                         accountname.Equals("anonymous", StringComparison.InvariantCultureIgnoreCase) ? 
@@ -50,11 +47,11 @@ namespace Starwatch.API.Rest.Route
                     );
             }
 
-            if (query.TryGetBool("admin", out admin))
+            if (query.TryGetBool("admin", out bool admin))
                 enumerator = enumerator.Where(p => p.AccountName != null && (p.GetAccountAsync().Result?.IsAdmin).GetValueOrDefault(false));
 
             //Prepare the array
-            Dictionary<int, string> players = new Dictionary<int, string>();
+            var players = new Dictionary<int, string>();
             foreach (var p in enumerator) players.Add(p.Connection, p.Username);
 
             //Return the array
