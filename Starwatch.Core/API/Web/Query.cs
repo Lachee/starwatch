@@ -48,7 +48,10 @@ namespace Starwatch.API.Web
 
                     //Add them as "true" in our collection
                     for (int i = 0; i < values.Length; i++)
-                        this.Add(values[i], "true");
+                    {
+                        if (!ContainsKey(values[i]))
+                            Add(values[i], "true");
+                    }
                 }
                 else
                 {
