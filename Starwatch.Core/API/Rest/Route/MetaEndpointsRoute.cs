@@ -27,9 +27,7 @@ namespace Starwatch.API.Rest.Route
     {
         public MetaEndpointsRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
 
-        public override RestResponse OnGet(Query query)
-        {
-            return new RestResponse(RestStatus.OK, res: Handler.GetRoutes());
-        }
+        public override RestResponse OnGet(Query query) 
+        => new RestResponse(RestStatus.OK, res: Handler.GetRoutes());
     }
 }
