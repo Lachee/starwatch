@@ -33,8 +33,7 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnGet(Query query)
         {
             WebSocketSharp.Server.WebSocketServiceHost serviceHost;
-            List<GatewayConnection> gateways = new List<GatewayConnection>();
-
+            var gateways = new List<GatewayConnection>();
 
             serviceHost = Handler.HttpServer.WebSocketServices["/log"];
             gateways.AddRange(serviceHost.Sessions.Sessions.Select(s => s as LogConnection));
