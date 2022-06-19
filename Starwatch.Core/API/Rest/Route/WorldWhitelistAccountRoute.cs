@@ -52,9 +52,11 @@ namespace Starwatch.API.Rest.Route
             {
                 //Get the protection
                 ProtectedWorld protection = await manager.GetProtectionAsync(World);
-                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-                //Get hte account
+                if (protection is null) 
+                    return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+
+                //Get the account
                 var result = await protection.GetAccountAsync(Account);
                 return new RestResponse(RestStatus.OK, result);
             });
@@ -77,15 +79,18 @@ namespace Starwatch.API.Rest.Route
             {
                 //Get the protection
                 ProtectedWorld protection = await manager.GetProtectionAsync(World);
-                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-                //Get hte account
+                if (protection is null) 
+                    return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+
+                //Get the account
                 var result = await protection.RemoveAccountAsync(Account);
                 return new RestResponse(RestStatus.OK, result);
             });
 
-            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return task.Result;
+            return query.GetBool(Query.AsyncKey, false) 
+                ? RestResponse.Async 
+                : task.Result;
         }
 
         /// <summary>
@@ -102,22 +107,27 @@ namespace Starwatch.API.Rest.Route
             {
                 //Get the protection
                 ProtectedWorld protection = await manager.GetProtectionAsync(World);
-                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
 
-                //Get hte account
+                if (protection is null) 
+                    return new RestResponse(RestStatus.ResourceNotFound, msg: "Protection does not exist.");
+
+                //Get the account
                 var result = await protection.SetAccountAsync(Account, query.GetString("reason", ""));
                 return new RestResponse(RestStatus.OK, result);
             });
 
-            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return task.Result;
+            return query.GetBool(Query.AsyncKey, false) 
+                ? RestResponse.Async 
+                : task.Result;
         }
 
         public WhitelistManager GetWhitelistManager()
         {
             var monitors = Starbound.GetMonitors<WhitelistManager>();
-            if (monitors.Length == 0) return null;
-            return monitors[0];
+
+            return monitors.Length == 0 
+                ? null 
+                : monitors[0];
         }
     }
 }

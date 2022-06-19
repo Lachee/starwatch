@@ -34,10 +34,10 @@ namespace Starwatch.API.Rest.Route
         public SessionRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
         public override RestResponse OnGet(Query query)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            var parameters = new Dictionary<string, object>();
             if (query.TryGetValue("username", out var username))
             {
-                parameters.Add("username",      $"%{username}%");
+                //parameters.Add("username",       $"%{username}%");
                 parameters.Add("username_clean", $"%{username}%");
             }
 
@@ -54,10 +54,10 @@ namespace Starwatch.API.Rest.Route
                 parameters.Add("cid", connection);
 
             TimeSpan? timespan = null;
-            if (query.TryGetInt("seconds", out var second)) timespan = TimeSpan.FromSeconds(second);
+            if (query.TryGetInt("seconds", out var second )) timespan = TimeSpan.FromSeconds(second);
             if (query.TryGetInt("minutes", out var minutes)) timespan = TimeSpan.FromMinutes(minutes);
-            if (query.TryGetInt("hours", out var hours)) timespan = TimeSpan.FromHours(hours);
-            if (query.TryGetInt("days", out var days)) timespan = TimeSpan.FromDays(days);
+            if (query.TryGetInt("hours",   out var hours  )) timespan = TimeSpan.FromHours  (hours);
+            if (query.TryGetInt("days",    out var days   )) timespan = TimeSpan.FromDays   (days);
 
             var result = Session.FindAsync(Starbound.DbContext, Starbound, parameters, mode: "AND", duration: timespan).Result;
             return new RestResponse(RestStatus.OK, result);

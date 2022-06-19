@@ -63,23 +63,26 @@ namespace Starwatch.API.Rest.Route
         {       
             //get the manager
             var manager = GetWhitelistManager();
-            if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
+
+            if (manager is null) 
+                return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");
 
             var task = Task.Run(async () =>
             {
                 //Get the world
                 ProtectedWorld protection = await manager.GetProtectionAsync(World);
-                if (protection == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "The world does not have any protection.");
+
+                if (protection is null) 
+                    return new RestResponse(RestStatus.ResourceNotFound, msg: "The world does not have any protection.");
 
                 //Delete the protection
                 var result = await manager.RemoveProtectionAsync(protection);
                 return new RestResponse(RestStatus.OK, result);
-
-
             });
 
-            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return task.Result;
+            return query.GetBool(Query.AsyncKey, false) 
+                ? RestResponse.Async 
+                : task.Result;
         }
 
         /// <summary>
