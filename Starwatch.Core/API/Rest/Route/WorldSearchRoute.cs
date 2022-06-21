@@ -45,7 +45,7 @@ namespace Starwatch.API.Rest.Route
             if (query.GetBool("systems", false))
             {
                 //Group them in to systems
-                Dictionary<Coordinate, List<World>> grouping = new Dictionary<Coordinate, List<World>>();
+                var grouping = new Dictionary<Coordinate, List<World>>();
                 foreach (var r in results)
                 {
                     var coord = new Coordinate()
@@ -70,10 +70,7 @@ namespace Starwatch.API.Rest.Route
         struct Coordinate
         {
             public long x, y;
-            public override string ToString()
-            {
-                return $"{x},{y}";
-            }
+            public override string ToString() => $"{x},{y}";
         }
 
     }

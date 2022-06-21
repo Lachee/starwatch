@@ -201,7 +201,12 @@ namespace Starwatch.API.Util
             response.ContentType = contentType;
             response.ContentEncoding = encoding;
             byte[] buff = encoding.GetBytes(content);
-            response.WriteContent(buff);
+            try
+            {
+                response.WriteContent(buff); // to-do: prevent exceptions from closed connections.
+            }
+            catch { }
+            
         }
         
         /// <summary>

@@ -45,7 +45,7 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnPost(Query query, object payloadObject)
         {
             //Prepare some values
-            Ban ban = (Ban)payloadObject;
+            var ban = (Ban)payloadObject;
             Player player = null;
 
             //Validate the ban exists
@@ -57,9 +57,8 @@ namespace Starwatch.API.Rest.Route
             if (query.ContainsKey("cid"))
             {
                 //We are banning a specific connection id.
-                int connection = 0;
-                if (!query.TryGetInt("cid", out connection))
-                    return new RestResponse(RestStatus.BadRequest, msg: $"Cannot convert '{query["cid"]}' to a int32!");
+                if (!query.TryGetInt("cid", out int connection))
+                    return new RestResponse(RestStatus.BadRequest, msg: $"Cannot convert '{query["cid"]}' to an int32!");
 
                 //Get the connection
                 player = Starbound.Connections.GetPlayer(connection);

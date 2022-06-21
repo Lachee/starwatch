@@ -35,9 +35,11 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnGet(Query query)
         {
-            var stat = new CompoundStatistic();
-            stat.Statistics =  Handler.Starbound.GetStatisticsAsync().Result;
-            stat.Configurator = Handler.Starbound.Configurator;
+            var stat = new CompoundStatistic
+            {
+                Statistics = Handler.Starbound.GetStatisticsAsync().Result,
+                Configurator = Handler.Starbound.Configurator
+            };
 
             return new RestResponse(RestStatus.OK, res: stat);
         }

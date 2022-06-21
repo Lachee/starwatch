@@ -28,10 +28,8 @@ namespace Starwatch.API.Rest.Route
         public MetaAuthenticationRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
 
         public override RestResponse OnGet(Query query)
-        {
-            string[] authenticationNames = Handler.ApiHandler.GetAuthenticationNames();
-            return new RestResponse(RestStatus.OK, res: authenticationNames);
-        }
+        => new RestResponse(RestStatus.OK, res: Handler.ApiHandler.GetAuthenticationNames());
+        
 
         public override RestResponse OnDelete(Query query)
         {

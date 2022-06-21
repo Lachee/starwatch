@@ -50,10 +50,10 @@ namespace Starwatch.API.Rest.Route
 
             //Get the backup
             var restore = restorer.GetWorldRestoreAsync(World).Result;
-            if (restore == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Restore does not exist.");
 
-            //return the world
-            return new RestResponse(RestStatus.OK, res: restore);
+            return restore is null 
+                ? new RestResponse(RestStatus.ResourceNotFound, msg: "Restore does not exist.") 
+                : new RestResponse(RestStatus.OK, res: restore);
         }
 
         /// <summary>
@@ -67,9 +67,10 @@ namespace Starwatch.API.Rest.Route
 
             //Get the backup
             var restore = restorer.CreateSnapshotAsync(World).Result;
-            if (restore == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Restore does not exist.");
 
-            return new RestResponse(RestStatus.OK, res: restore); 
+            return restore is null
+                ? new RestResponse(RestStatus.ResourceNotFound, msg: "Restore does not exist.")
+                : new RestResponse(RestStatus.OK, res: restore);
         }
 
         /// <summary>
@@ -79,14 +80,16 @@ namespace Starwatch.API.Rest.Route
         {
             //get the manager
             RestoreMonitor restorer = GetRestoreMonitor();
-            if (restorer == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the restore manager!");
+
+            if (restorer is null) 
+                return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the restore manager!");
 
             //Get the backup
             var task = restorer.DeleteRestoreAsync(World);
-            if (query.IsAsync) return RestResponse.Async;
 
-            //Delete the backup
-            return new RestResponse(RestStatus.OK, res: task.Result);
+            return query.IsAsync
+                ? RestResponse.Async
+                : new RestResponse(RestStatus.OK, res: task.Result);
         }
 
         /// <summary>
@@ -95,24 +98,27 @@ namespace Starwatch.API.Rest.Route
         public override RestResponse OnPatch(Query query, object payloadObject)
         {
             //get the patch
-            WorldRestorePatch patch = (WorldRestorePatch)payloadObject;
+            var patch = (WorldRestorePatch)payloadObject;
             
             //get the manager
             RestoreMonitor restorer = GetRestoreMonitor();
             if (restorer == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the restore manager!");
 
             var result = restorer.SetMirrorAsync(World, patch.Mirror != null ? World.Parse(patch.Mirror) : null).Result;
-            if (!result) return new RestResponse(RestStatus.ResourceNotFound, msg: "Server failed to patch the world. Does it exist?");
 
-            return OnGet(query);
+            return !result
+                ? new RestResponse(RestStatus.ResourceNotFound, msg: "Server failed to patch the world. Does it exist?")
+                : OnGet(query);
         }
 
 
         public RestoreMonitor GetRestoreMonitor()
         {
             var monitors = Starbound.GetMonitors<RestoreMonitor>();
-            if (monitors.Length == 0) return null;
-            return monitors[0];
+
+            return monitors.Length == 0 
+                ? null 
+                : monitors[0];
         }
     }
 }

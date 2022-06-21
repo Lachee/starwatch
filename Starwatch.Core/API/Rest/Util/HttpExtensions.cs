@@ -43,48 +43,59 @@ namespace Starwatch.API.Rest.Util
         /// <param name="rest"></param>
         public static void WriteRest(this HttpListenerResponse response, RestResponse rest)
         {
-            switch(rest.Status)
+            // To-do: Find the cause of why this errors sometimes:
+            // - Delete any account
+            // - Watch as Starwatch errors on the InternalError switch/case
+            // - Error is InvalidOperationException: 'Cannot be changed after the headers are sent.'
+
+            // Try/catch here makes the error disappear, and surprisingly the rest response is an OK.
+
+            try
             {
-                default:
-                case RestStatus.Async:
-                case RestStatus.OK:
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    break;
+                switch (rest.Status)
+                {
+                    default:
+                    case RestStatus.Async:
+                    case RestStatus.OK:
+                        response.StatusCode = (int)HttpStatusCode.OK;
+                        break;
 
-                case RestStatus.Forbidden:
-                    response.StatusCode = (int)HttpStatusCode.Forbidden;
-                    break;
+                    case RestStatus.Forbidden:
+                        response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        break;
 
-                case RestStatus.RouteNotFound:
-                case RestStatus.ResourceNotFound:
-                    response.StatusCode = (int)HttpStatusCode.NotFound;
-                    break;
+                    case RestStatus.RouteNotFound:
+                    case RestStatus.ResourceNotFound:
+                        response.StatusCode = (int)HttpStatusCode.NotFound;
+                        break;
 
-                case RestStatus.Terminated:
-                    response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
-                    break;
+                    case RestStatus.Terminated:
+                        response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
+                        break;
 
-                case RestStatus.TooManyRequests:
-                    response.StatusCode = 429; //TooManyRequests in Http2
-                    break;
+                    case RestStatus.TooManyRequests:
+                        response.StatusCode = 429; //TooManyRequests in Http2
+                        break;
 
-                case RestStatus.NotImplemented:
-                    response.StatusCode = (int)HttpStatusCode.NotImplemented;
-                    break;
+                    case RestStatus.NotImplemented:
+                        response.StatusCode = (int)HttpStatusCode.NotImplemented;
+                        break;
 
-                case RestStatus.InternalError:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    break;
+                    case RestStatus.InternalError:
+                        response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        break;
 
-                case RestStatus.BadRequest:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    break;
+                    case RestStatus.BadRequest:
+                        response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        break;
 
-                case RestStatus.BadMethod:
-                    response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                    break;
-                    
+                    case RestStatus.BadMethod:
+                        response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                        break;
+
+                }
             }
+            catch { }
             
             response.WriteJson(rest);
         }

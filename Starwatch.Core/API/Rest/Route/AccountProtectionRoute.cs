@@ -39,7 +39,9 @@ namespace Starwatch.API.Rest.Route
         /// Searches for all whitelists for the account
         /// </summary>
         public override RestResponse OnGet(Query query)
-        {      
+        {
+            // todo: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ':account' at line 1
+
             //get the manager
             var manager = GetWhitelistManager();
             if (manager == null) return new RestResponse(RestStatus.ResourceNotFound, msg: "Could not find the protection manager!");

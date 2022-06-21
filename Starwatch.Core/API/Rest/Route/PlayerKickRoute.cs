@@ -125,6 +125,18 @@ namespace Starwatch.API.Rest.Route
                 performedQuery = true;
             }
 
+            if (query.ContainsKey("location"))
+            {
+                res = res.Where(x =>
+                    x.Location != null &&
+                    x.Location.Whereami.Equals(query.GetString("location", ""), StringComparison.InvariantCultureIgnoreCase));
+
+                if (res.Count() == 0)
+                    return new RestResponse(RestStatus.ResourceNotFound, $"No user with location '{query.GetString("location", "")}' was found.");
+
+                performedQuery = true;
+            }
+
             if (query.ContainsKey("cid"))
             {
                 int cid = -1;
@@ -172,10 +184,9 @@ namespace Starwatch.API.Rest.Route
                 }
             }
 
-            if (async)
-                return new RestResponse(RestStatus.Async, $"Attempting to kick {res.Count()} players.", response);
-
-            return new RestResponse(RestStatus.OK, $"Kicked {response.SuccessfulKicks} players successfully.", response);
+            return async
+                ? new RestResponse(RestStatus.Async, $"Attempting to kick {res.Count()} players.", response)
+                : new RestResponse(RestStatus.OK, $"Kicked {response.SuccessfulKicks} players successfully.", response);
         }
 
     }

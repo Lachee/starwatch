@@ -17,31 +17,24 @@ You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see < https://www.gnu.org/licenses/ >.
 END LICENSE DISCLAIMER
 */
+
 using System;
 using Starwatch.API.Rest.Routing;
-using Starwatch.Entities;
 using Starwatch.API.Rest.Route.Entities;
-using Starwatch.API.Rest.Serialization;
 using Starwatch.API.Web;
-using Starwatch.API.Gateway.Event;
-using Starwatch.API.Gateway;
 using System.Linq;
-using System.Threading.Tasks;
 using Starwatch.Monitoring;
-using Starwatch.Util;
-using System.Diagnostics;
 
 namespace Starwatch.API.Rest.Route
 {
     [Route("/announcement", AuthLevel.Admin)]
     class AnnouncementRoute : RestRoute
     {
-        const string RESOURCE_LOCKED = "Resource is currently locked. Please wait and try again.";
-        const string NO_MONITOR = "AnnouncementMonitor was not found.";
-        const string MISSING_RESOURCE = "No such announcement.";
-
-        const string ID_MUST_BE_INTEGER = "id must be an integer.";
-        const string ID_MUST_BE_POSITIVE = "id must be greater than or equal to 0.";
+        const string ResourceLocked   = "Resource is currently locked. Please wait and try again.";
+        const string NoMonitor        = "AnnouncementMonitor was not found.";
+        const string MissingResource  = "No such announcement.";
+        const string IdMustBeInteger  = "id must be an integer.";
+        const string IdMustBePositive = "id must be greater than or equal to 0.";
 
         public AnnouncementRoute(RestHandler handler, Authentication authentication) : base(handler, authentication) { }
         public override Type PayloadType => typeof(AnnouncementPatch);
@@ -53,70 +46,38 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnGet(Query query)
         {
-#if DEBUG
-            if (Debugger.IsAttached)
-            {
-                if (query.ContainsKey("dbg"))
-                {
-                    if (query["dbg"] == "post")
-                    {
-                        return OnPost(query, null);
-                    }
-
-                    if (query["dbg"] == "delete")
-                    {
-                        return OnDelete(query);
-                    }
-
-                    if (query["dbg"] == "patch")
-                    {
-                        return OnPatch(query, null);
-                    }
-                }
-            }
-#endif
-            // Grab the configurator from the monitor 
-            AnnouncementMonitor mon = null;
-            bool hasMon = Starbound.TryGetMonitor(out mon);
+            // Grab the configurator from the monitor
+            bool hasMon = Starbound.TryGetMonitor(out AnnouncementMonitor mon);
 
             if (!hasMon)
-            {
                 return new RestResponse(RestStatus.InternalError, "AnnouncementMonitor was not found.");
-            }
 
             var announcements = mon.Announcements;
 
             if (query.ContainsKey("id"))
             {
                 // Grabs a specific announcement.
-                int id = 0;
-                bool ok = int.TryParse(query["id"], out id);
+                bool ok = int.TryParse(query["id"], out int id);
+
                 if (!ok)
-                {
-                    return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_INTEGER);
-                }
+                    return new RestResponse(RestStatus.BadRequest, IdMustBeInteger);
 
                 if (id < 0)
-                {
-                    return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_POSITIVE);
-                }
+                    return new RestResponse(RestStatus.BadRequest, IdMustBePositive);
 
+#pragma warning disable IDE0046 // Convert to conditional expression
                 if (announcements.Length > id)
-                {
                     return new RestResponse(RestStatus.OK, announcements[id]);
-                }
+#pragma warning restore IDE0046 // Convert to conditional expression
 
-                return new RestResponse(RestStatus.ResourceNotFound, MISSING_RESOURCE);
+                return new RestResponse(RestStatus.ResourceNotFound, MissingResource);
             }
             else
             {
                 // Returns all announcements
-                if (announcements.Length == 1)
-                {
-                    return new RestResponse(RestStatus.OK, "There is 1 announcement.", 1);
-                }
-
-                return new RestResponse(RestStatus.OK, $"There are {announcements.Length} announcements.", announcements);
+                return announcements.Length == 1
+                    ? new RestResponse(RestStatus.OK,  "There is 1 announcement.", announcements)
+                    : new RestResponse(RestStatus.OK, $"There are {announcements.Length} announcements.", announcements);
             }
         }
 
@@ -127,34 +88,26 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnDelete(Query query)
         {
-            // Grab the configurator from the monitor 
-            AnnouncementMonitor mon = null;
-            bool hasMon = Starbound.TryGetMonitor(out mon);
+            // Grab the configurator from the monitor
+            bool hasMon = Starbound.TryGetMonitor(out AnnouncementMonitor mon);
 
             if (!hasMon)
             {
-                return new RestResponse(RestStatus.InternalError, NO_MONITOR);
+                return new RestResponse(RestStatus.InternalError, NoMonitor);
             }
 
             if (query.ContainsKey("id"))
             {
-                int id = 0;
-                bool ok = int.TryParse(query["id"], out id);
+                bool ok = int.TryParse(query["id"], out int id);
 
                 if (!ok)
-                {
-                    return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_INTEGER);
-                }
+                    return new RestResponse(RestStatus.BadRequest, IdMustBeInteger);
 
                 if (id < 0)
-                {
-                    return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_POSITIVE);
-                }
+                    return new RestResponse(RestStatus.BadRequest, IdMustBePositive);
 
                 if (!mon.Lock())
-                {
-                    return new RestResponse(RestStatus.InternalError, RESOURCE_LOCKED);
-                }
+                    return new RestResponse(RestStatus.InternalError, ResourceLocked);
 
                 if (mon.Announcements.Length > id)
                 {
@@ -174,61 +127,18 @@ namespace Starwatch.API.Rest.Route
                     catch (Exception ex)
                     {
                         mon.Unlock();
-                        return new RestResponse(RestStatus.InternalError, "Failed to save config: " + ex.Message);
+                        return new RestResponse(RestStatus.InternalError, $"Failed to save config: {ex.Message}");
                     }
                 }
 
                 mon.Unlock();
-                return new RestResponse(RestStatus.ResourceNotFound, MISSING_RESOURCE);
+                return new RestResponse(RestStatus.ResourceNotFound, MissingResource);
             }
             else
             {
                 return new RestResponse(RestStatus.BadRequest, "id must be included.");
             }
         }
-
-#if DEBUG
-        private AnnouncementPatch FakeBody (Query query)
-        {
-            if (!Debugger.IsAttached)
-            {
-                // shouldn't get here.
-                throw new Exception("Phishing attempt.");
-            }
-
-            AnnouncementPatch ap = new AnnouncementPatch
-            {
-                Message = "",
-                Enabled = false,
-                Interval = 1800
-            };
-
-            if (query.ContainsKey("message"))
-            {
-                ap.Message = query["message"];
-            }
-
-            if (query.ContainsKey("enabled"))
-            {
-                bool e = false;
-                if (bool.TryParse(query["enabled"], out e))
-                {
-                    ap.Enabled = e;
-                }
-            }
-
-            if (query.ContainsKey("interval"))
-            {
-                double interval2 = 0d;
-                if (double.TryParse(query["interval"], out interval2))
-                {
-                    ap.Interval = interval2;
-                }
-            }
-
-            return ap;
-        }
-#endif
 
         /// <summary>
         /// Updates the announcement
@@ -238,41 +148,23 @@ namespace Starwatch.API.Rest.Route
         /// <returns></returns>
         public override RestResponse OnPatch(Query query, object payloadObject)
         {
-#if DEBUG
-            if (Debugger.IsAttached)
-            {
-                if (payloadObject == null)
-                {
-                    payloadObject = FakeBody(query);
-                }
-            }
-#endif
-
-            if (payloadObject == null)
-            {
+            if (payloadObject is null)
                 return new RestResponse(RestStatus.BadRequest, "No payload.");
-            }
 
-            AnnouncementPatch payload = (AnnouncementPatch) payloadObject;
+            var payload = (AnnouncementPatch) payloadObject;
 
             if (payload.Id < 0)
-            {
-                return new RestResponse(RestStatus.BadRequest, ID_MUST_BE_POSITIVE);
-            }
+                return new RestResponse(RestStatus.BadRequest, IdMustBePositive);
 
-            // Grab the configurator from the monitor 
-            AnnouncementMonitor mon = null;
-            bool hasMon = Starbound.TryGetMonitor(out mon);
+            // Grab the configurator from the monitor
+            bool hasMon = Starbound.TryGetMonitor(out AnnouncementMonitor mon);
 
             if (!hasMon)
-            {
-                return new RestResponse(RestStatus.InternalError, NO_MONITOR);
-            }
-
+                return new RestResponse(RestStatus.InternalError, NoMonitor);
+            
             if (!mon.Lock())
-            {
-                return new RestResponse(RestStatus.InternalError, RESOURCE_LOCKED);
-            }
+                return new RestResponse(RestStatus.InternalError, ResourceLocked);
+            
 
             AnnouncementMonitor.Announcement obj = null;
 
@@ -284,13 +176,13 @@ namespace Starwatch.API.Rest.Route
 
             obj = mon.Announcements[payload.Id];
 
-            AnnouncementPatch oa = (AnnouncementPatch)payloadObject;
+            var oa = (AnnouncementPatch)payloadObject;
 
-            string message = oa.Message ?? obj.Message;
-            bool enabled = oa.Enabled ?? obj.Enabled;
+            string message  = oa.Message  ?? obj.Message;
+            bool enabled    = oa.Enabled  ?? obj.Enabled;
             double interval = oa.Interval ?? obj.Interval;
 
-            AnnouncementMonitor.Announcement newObj = new AnnouncementMonitor.Announcement
+            var newObj = new AnnouncementMonitor.Announcement
             {
                 Message = message,
                 Enabled = enabled,
@@ -307,7 +199,7 @@ namespace Starwatch.API.Rest.Route
             catch (Exception ex)
             {
                 mon.Unlock();
-                return new RestResponse(RestStatus.InternalError, "Failed to save config: " + ex.Message);
+                return new RestResponse(RestStatus.InternalError, $"Failed to save config: {ex.Message}");
             }
 
             mon.Unlock();
@@ -317,36 +209,19 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnPost(Query query, object payloadObject)
         {
-#if DEBUG
-            if (Debugger.IsAttached)
-            {
-                if (payloadObject == null)
-                {
-                    payloadObject = FakeBody(query);
-                }
-            }
-#endif
-
-            if (payloadObject == null)
-            {
+            if (payloadObject is null)
                 return new RestResponse(RestStatus.BadRequest, "No payload.");
-            }
 
-            AnnouncementPatch obj = (AnnouncementPatch)payloadObject;
+            var obj = (AnnouncementPatch)payloadObject;
 
-            // Grab the configurator from the monitor 
-            AnnouncementMonitor mon = null;
-            bool hasMon = Starbound.TryGetMonitor(out mon);
+            // Grab the configurator from the monitor
+            bool hasMon = Starbound.TryGetMonitor(out AnnouncementMonitor mon);
 
             if (!hasMon)
-            {
-                return new RestResponse(RestStatus.InternalError, NO_MONITOR);
-            }
+                return new RestResponse(RestStatus.InternalError, NoMonitor);
 
             if (!mon.Lock())
-            {
-                return new RestResponse(RestStatus.InternalError, RESOURCE_LOCKED);
-            }
+                return new RestResponse(RestStatus.InternalError, ResourceLocked);
 
             var announcements = new AnnouncementMonitor.Announcement[mon.Announcements.Length + 1];
 
@@ -359,6 +234,7 @@ namespace Starwatch.API.Rest.Route
 
             mon.Announcements = announcements;
             mon.Configuration.SetKey("announcements", announcements);
+
             try
             {
                 mon.Configuration.Save();
@@ -366,7 +242,7 @@ namespace Starwatch.API.Rest.Route
             catch (Exception ex)
             {
                 mon.Unlock();
-                return new RestResponse(RestStatus.InternalError, "Failed to save config: " + ex.Message);
+                return new RestResponse(RestStatus.InternalError, $"Failed to save config: {ex.Message}");
             }
 
             mon.Unlock();

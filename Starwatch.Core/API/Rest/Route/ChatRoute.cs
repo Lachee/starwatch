@@ -37,20 +37,19 @@ namespace Starwatch.API.Rest.Route
 
         public override RestResponse OnPost(Query query, object payloadObject)
         {
-            if (Starbound.Rcon == null)
+            if (Starbound.Rcon is null)
                 return new RestResponse(RestStatus.BadRequest, "Rcon not enabled.");
 
             var payload = (Payload)payloadObject;
             string message = payload.Content;
 
             if (query.GetBool("include_tag", false))
-            {
                 message = $"<^pink;{Authentication.Name}^reset;> {message}";
-            }
 
             var task = Starbound.Rcon.BroadcastAsync(message);
-            if (query.GetBool(Query.AsyncKey, false)) return RestResponse.Async;
-            return new RestResponse(RestStatus.OK, res: task.Result);
+            return query.GetBool(Query.AsyncKey, false) 
+                ? RestResponse.Async 
+                : new RestResponse(RestStatus.OK, res: task.Result);
         }
     }
 }

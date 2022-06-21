@@ -27,7 +27,7 @@ namespace Starwatch.API.Gateway
     public class GatewayConnection : WebSocketBehavior
     {
         public static long ConnectionCount { get; private set; }
-        private static long GetNextConnectionID() { return ConnectionCount++; }
+        private static long GetNextConnectionID() => ConnectionCount++;
 
         /// <summary>
         /// The unique ID of the connection
