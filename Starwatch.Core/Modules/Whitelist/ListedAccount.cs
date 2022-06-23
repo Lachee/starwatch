@@ -87,7 +87,7 @@ namespace Starwatch.Modules.Whitelist
         /// <returns></returns>
         public static async Task<List<string>> ReverseSearchProtectionsAsync(DbContext db, string account)
         {
-            return await db.ExecuteAsync<string>("SELECT whereami FROM !protections_accounts LEFT JOIN !protections ON !protections.id = protections_accounts.id WHERE account=:account", 
+            return await db.ExecuteAsync<string>("SELECT whereami FROM !protections_accounts LEFT JOIN !protections ON !protections.id = !protections_accounts.id WHERE account=@account", 
                 (reader) => reader.GetString("whereami"),
                 new Dictionary<string, object>() { { "account", account } });
         }
